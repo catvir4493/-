@@ -1,0 +1,122 @@
+[
+	{
+		"id": "student_exam_01",
+		"customer_name": "黑眼圈学生",
+		"customer_type": "student",
+		"dialogue": "明天有一场很重要的考试，但我现在脑子像坏掉了一样。",
+		"required_tags": ["清醒", "冷静", "短效"],
+		"avoid_tags": ["睡眠", "冲动"],
+		"difficulty": 1,
+		"base_reward": 8,
+		"story_id": "student_story",
+		"repeatable": false
+	},
+	{
+		"id": "wet_man_01",
+		"customer_name": "湿透的男人",
+		"customer_type": "mysterious",
+		"dialogue": "有没有什么东西，可以让我今晚不被任何人找到？",
+		"required_tags": ["隐藏", "保护", "短效"],
+		"avoid_tags": ["真实", "连接"],
+		"difficulty": 1,
+		"base_reward": 10,
+		"story_id": "wet_man_story",
+		"repeatable": false
+	},
+	{
+		"id": "red_dress_woman_01",
+		"customer_name": "穿红裙的女人",
+		"customer_type": "adult",
+		"dialogue": "我想去见一个很久没见的人，但我怕一开口就后悔。",
+		"required_tags": ["勇气", "回忆", "温和"],
+		"avoid_tags": ["冲动", "危险"],
+		"difficulty": 2,
+		"base_reward": 12,
+		"story_id": "red_dress_story",
+		"repeatable": false
+	},
+	{
+		"id": "silent_old_man_01",
+		"customer_name": "沉默老人",
+		"customer_type": "elder",
+		"dialogue": "我不想忘记她，但也不想一直这么疼。",
+		"required_tags": ["回忆", "安慰", "温和"],
+		"avoid_tags": ["遗忘", "逃避"],
+		"difficulty": 2,
+		"base_reward": 12,
+		"story_id": "old_man_story",
+		"repeatable": false
+	},
+	{
+		"id": "masked_boy_01",
+		"customer_name": "戴口罩的少年",
+		"customer_type": "teenager",
+		"dialogue": "有没有一种东西，可以让我明天像另一个人？",
+		"required_tags": ["勇气", "希望", "短效"],
+		"avoid_tags": ["危险", "真实"],
+		"difficulty": 1,
+		"base_reward": 9,
+		"story_id": "masked_boy_story",
+		"repeatable": false
+	},
+	{
+		"id": "overtime_worker_01",
+		"customer_name": "加班职员",
+		"customer_type": "worker",
+		"dialogue": "我只需要撑到天亮，别让我现在倒下。",
+		"required_tags": ["清醒", "短效", "希望"],
+		"avoid_tags": ["睡眠", "悲伤"],
+		"difficulty": 1,
+		"base_reward": 8,
+		"story_id": "worker_story",
+		"repeatable": true
+	},
+	{
+		"id": "lost_child_01",
+		"customer_name": "迷路的小孩",
+		"customer_type": "child",
+		"dialogue": "我找不到回家的路了，但我不想哭。",
+		"required_tags": ["保护", "安慰", "希望"],
+		"avoid_tags": ["孤独", "危险"],
+		"difficulty": 1,
+		"base_reward": 7,
+		"story_id": "lost_child_story",
+		"repeatable": false
+	},
+	{
+		"id": "insomnia_driver_01",
+		"customer_name": "失眠的司机",
+		"customer_type": "driver",
+		"dialogue": "我已经开了很久，但我不知道自己该停下，还是继续往前。",
+		"required_tags": ["冷静", "清醒", "保护"],
+		"avoid_tags": ["冲动", "逃避"],
+		"difficulty": 2,
+		"base_reward": 11,
+		"story_id": "driver_story",
+		"repeatable": true
+	},
+	{
+		"id": "nameless_guest_01",
+		"customer_name": "忘记名字的客人",
+		"customer_type": "strange",
+		"dialogue": "我记得我要买什么，但我不记得我是谁。",
+		"required_tags": ["真实", "回忆", "连接"],
+		"avoid_tags": ["遗忘", "逃避"],
+		"difficulty": 3,
+		"base_reward": 15,
+		"story_id": "nameless_story",
+		"repeatable": false
+	},
+	{
+		"id": "previous_clerk_01",
+		"customer_name": "上一任店员",
+		"customer_type": "special",
+		"dialogue": "我想买回我离开这里的理由。",
+		"required_tags": ["真实", "回忆", "勇气"],
+		"avoid_tags": ["逃避", "遗忘"],
+		"difficulty": 3,
+		"base_reward": 20,
+		"story_id": "previous_clerk_story",
+		"repeatable": false
+	}
+]

@@ -1,0 +1,112 @@
+[
+	{
+		"id": "coffee",
+		"name": "罐装咖啡",
+		"description": "喝完会清醒，也会更焦虑。",
+		"buy_price": 3,
+		"sell_price": 6,
+		"tags": ["清醒", "焦虑", "短效"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 10
+	},
+	{
+		"id": "milk",
+		"name": "温牛奶",
+		"description": "温热之后会让人稍微安心一点。",
+		"buy_price": 2,
+		"sell_price": 5,
+		"tags": ["安慰", "睡眠", "温和"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 8
+	},
+	{
+		"id": "mint_candy",
+		"name": "薄荷糖",
+		"description": "短暂的冷静，短暂到像错觉。",
+		"buy_price": 1,
+		"sell_price": 4,
+		"tags": ["冷静", "短效", "清醒"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 12
+	},
+	{
+		"id": "black_umbrella",
+		"name": "黑伞",
+		"description": "能遮住雨，也能遮住脸。",
+		"buy_price": 5,
+		"sell_price": 10,
+		"tags": ["保护", "隐藏", "孤独"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 4
+	},
+	{
+		"id": "red_lighter",
+		"name": "红色打火机",
+		"description": "一点火光，也可能是一点冲动。",
+		"buy_price": 4,
+		"sell_price": 9,
+		"tags": ["勇气", "冲动", "危险"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 5
+	},
+	{
+		"id": "bandage",
+		"name": "创可贴",
+		"description": "不能治好伤口，但可以让它暂时不那么明显。",
+		"buy_price": 2,
+		"sell_price": 5,
+		"tags": ["安慰", "保护", "短效"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 10
+	},
+	{
+		"id": "old_photo",
+		"name": "旧照片",
+		"description": "不知道是谁遗落在店里的照片。",
+		"buy_price": 0,
+		"sell_price": 8,
+		"tags": ["回忆", "悲伤", "真实"],
+		"rarity": "rare",
+		"unlock_day": 1,
+		"max_stock": 1
+	},
+	{
+		"id": "ticket",
+		"name": "车票",
+		"description": "目的地被雨水泡花了。",
+		"buy_price": 4,
+		"sell_price": 9,
+		"tags": ["逃避", "希望", "连接"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 5
+	},
+	{
+		"id": "sleep_mask",
+		"name": "眼罩",
+		"description": "遮住光，也遮住今晚不想看的东西。",
+		"buy_price": 3,
+		"sell_price": 7,
+		"tags": ["睡眠", "逃避", "短效"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 6
+	},
+	{
+		"id": "rice_ball",
+		"name": "饭团",
+		"description": "普通、便宜，但至少是热的。",
+		"buy_price": 2,
+		"sell_price": 5,
+		"tags": ["安慰", "温和", "希望"],
+		"rarity": "common",
+		"unlock_day": 1,
+		"max_stock": 10
+	}
+]
