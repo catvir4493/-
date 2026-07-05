@@ -218,7 +218,9 @@ func _make_button(text: String) -> Button:
 func _on_buy_pressed(item_id: String) -> void:
 	var result: Dictionary = InventorySystem.buy_item(item_id, 1)
 	if bool(result.get("success", false)):
-		_feedback_label.text = "已补充：%s" % _get_item_name(item_id)
+		_feedback_label.text = "已补货：%s" % _get_item_name(item_id)
+		if not SaveManager.save_game("restock"):
+			push_warning("Failed to save restock checkpoint after purchase.")
 	else:
 		_feedback_label.text = _get_failure_message(str(result.get("reason", "")))
 

@@ -6,11 +6,13 @@ signal data_load_failed(data_type: String, path: String, message: String)
 const ITEMS_PATH := "res://data/items.json"
 const CUSTOMERS_PATH := "res://data/customers.json"
 const COMBOS_PATH := "res://data/combos.json"
+const CUSTOMER_PROFILES_PATH := "res://data/customer_profiles.json"
 const NIGHTS_PATH := "res://data/nights.json"
 
 var items = {}
 var customers = {}
 var combos = {}
+var customer_profiles = {}
 var nights = {}
 
 var _loaded := false
@@ -43,6 +45,13 @@ func load_all_data() -> bool:
 		all_loaded = false
 	else:
 		combos = loaded_combos
+
+	var loaded_customer_profiles = _load_dataset("customer_profiles", CUSTOMER_PROFILES_PATH, "customer_profiles")
+	if loaded_customer_profiles == null:
+		customer_profiles = {}
+		all_loaded = false
+	else:
+		customer_profiles = loaded_customer_profiles
 
 	var loaded_nights = _load_dataset("nights", NIGHTS_PATH, "nights")
 	if loaded_nights == null:
@@ -90,6 +99,14 @@ func get_all_combos() -> Array:
 	return get_combos()
 
 
+func get_customer_profiles() -> Array:
+	return _collection_to_array(customer_profiles)
+
+
+func get_all_customer_profiles() -> Array:
+	return get_customer_profiles()
+
+
 func get_nights() -> Array:
 	return _collection_to_array(nights)
 
@@ -116,6 +133,22 @@ func get_combo(combo_id: String) -> Dictionary:
 
 func get_combo_by_id(combo_id: String) -> Dictionary:
 	return get_combo(combo_id)
+
+
+func get_customer_profile_by_id(profile_id: String) -> Dictionary:
+	return _get_record(customer_profiles, profile_id)
+
+
+func get_customer_profile_by_story_id(story_id: String) -> Dictionary:
+	var story_key := str(story_id)
+	if story_key.is_empty():
+		return {}
+
+	for profile in get_customer_profiles():
+		if profile is Dictionary and str(profile.get("story_id", "")) == story_key:
+			return profile.duplicate(true)
+
+	return {}
 
 
 func get_night(night_id: int) -> Dictionary:
@@ -213,6 +246,7 @@ func _record_matches_id(record: Dictionary, record_key: String) -> bool:
 	return (
 		str(record.get("id", "")) == record_key
 		or str(record.get("combo_id", "")) == record_key
+		or str(record.get("story_id", "")) == record_key
 		or str(record.get("night", "")) == record_key
 		or str(record.get("number", "")) == record_key
 	)

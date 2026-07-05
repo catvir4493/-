@@ -51,20 +51,50 @@ func get_inventory() -> Dictionary:
 	return stock_by_item_id.duplicate(true)
 
 
-func set_inventory(inventory: Dictionary) -> void:
-	stock_by_item_id.clear()
+func export_inventory_data() -> Dictionary:
+	return get_inventory()
 
-	for item_id in inventory.keys():
-		var normalized_id: String = str(item_id)
+
+func import_inventory_data(data: Dictionary) -> bool:
+	if not (data is Dictionary):
+		reset_to_default_stock()
+		return false
+
+	stock_by_item_id.clear()
+	var imported_cleanly := true
+
+	for item in DataManager.get_all_items():
+		if not (item is Dictionary):
+			continue
+
+		var item_id := str(item.get("id", ""))
+		if item_id.is_empty():
+			continue
+
+		var max_stock := maxi(int(item.get("max_stock", 0)), 0)
+		var stock := max_stock
+		if data.has(item_id):
+			stock = clampi(_to_int(data[item_id], max_stock), 0, max_stock)
+
+		stock_by_item_id[item_id] = stock
+		inventory_changed.emit(item_id, stock)
+
+	for saved_item_id in data.keys():
+		var normalized_id := str(saved_item_id)
 		if normalized_id.is_empty():
 			continue
 
-		var max_stock: int = get_max_stock(normalized_id)
-		var stock: int = clampi(int(inventory[item_id]), 0, max_stock)
-		stock_by_item_id[normalized_id] = stock
-		inventory_changed.emit(normalized_id, stock)
+		if DataManager.get_item_by_id(normalized_id).is_empty():
+			imported_cleanly = false
+			push_warning("Ignoring unknown inventory item from save: %s." % normalized_id)
 
 	_initialized = true
+	inventory_reset.emit()
+	return imported_cleanly
+
+
+func set_inventory(inventory: Dictionary) -> void:
+	import_inventory_data(inventory)
 
 
 func get_stock(item_id: String) -> int:
@@ -237,3 +267,16 @@ func _make_buy_result(success: bool, reason: String, item_id: String, quantity: 
 		"new_stock": new_stock,
 		"remaining_money": remaining_money
 	}
+
+
+func _to_int(value, default_value: int) -> int:
+	if value is int:
+		return value
+
+	if value is float:
+		return int(value)
+
+	if value is String and value.is_valid_int():
+		return int(value)
+
+	return default_value

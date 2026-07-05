@@ -393,6 +393,7 @@ func _on_confirm_pressed() -> void:
 	print("score_result: ", JSON.stringify(service_result))
 
 	NightStatsSystem.record_service_result(service_result)
+	CustomerProgressSystem.record_customer_result(current_customer, service_result)
 	GameManager.add_money(int(service_result.get("income", 0)))
 	InventorySystem.consume_items(selected_ids)
 	GameManager.show_result(service_result)

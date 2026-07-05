@@ -8,6 +8,8 @@ var _restock_button: Button
 func _ready() -> void:
 	_build_ui()
 	_refresh()
+	if not SaveManager.save_game("night_result"):
+		push_warning("Failed to save night_result checkpoint.")
 
 
 func _build_ui() -> void:
@@ -107,4 +109,7 @@ func _on_restock_pressed() -> void:
 		return
 
 	_restock_button.disabled = true
-	GameManager.go_to_restock()
+	if not SaveManager.save_game("restock"):
+		push_warning("Failed to save restock checkpoint.")
+
+	GameManager.go_to_restock(true, false)

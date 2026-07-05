@@ -1,0 +1,134 @@
+[
+	{
+		"id": "student_profile",
+		"story_id": "student_story",
+		"display_name": "黑眼圈学生",
+		"customer_type": "student",
+		"short_description": "总是在考试前出现的学生。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_student",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "一个担心自己无法通过考试的学生。他看起来已经很久没有好好睡觉。",
+			"2": "他再次来到店里。这次，他似乎不只是为了考试。"
+		}
+	},
+	{
+		"id": "wet_man_profile",
+		"story_id": "wet_man_story",
+		"display_name": "湿透的男人",
+		"customer_type": "mysterious",
+		"short_description": "雨夜里浑身湿透、总是回头看的男人。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_wet_man",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "他想要不被任何人找到。你不知道他是在躲谁，还是在躲自己。"
+		}
+	},
+	{
+		"id": "red_dress_woman_profile",
+		"story_id": "red_dress_story",
+		"display_name": "穿红裙的女人",
+		"customer_type": "adult",
+		"short_description": "深夜仍穿着红裙出门的女人。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_red_dress_woman",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "她想去见一个很久没见的人，却害怕自己开口之后会后悔。"
+		}
+	},
+	{
+		"id": "old_man_profile",
+		"story_id": "old_man_story",
+		"display_name": "沉默老人",
+		"customer_type": "elder",
+		"short_description": "话很少，却像带着很多旧日子的人。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_old_man",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "他不想忘记某个人，却也不想一直被回忆刺痛。",
+			"2": "他第二次出现时，带来的沉默比上次更轻一点。也许他开始允许自己被安慰。"
+		}
+	},
+	{
+		"id": "masked_boy_profile",
+		"story_id": "masked_boy_story",
+		"display_name": "戴口罩的少年",
+		"customer_type": "teenager",
+		"short_description": "把半张脸藏在口罩后面的少年。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_masked_boy",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "他想在明天变成另一个人。那听起来像勇气，也像逃跑。"
+		}
+	},
+	{
+		"id": "worker_profile",
+		"story_id": "worker_story",
+		"display_name": "加班职员",
+		"customer_type": "worker",
+		"short_description": "只想撑到天亮的加班职员。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_worker",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "他不要求明天变好，只希望今晚不要倒下。"
+		}
+	},
+	{
+		"id": "lost_child_profile",
+		"story_id": "lost_child_story",
+		"display_name": "迷路的小孩",
+		"customer_type": "child",
+		"short_description": "独自走进深夜便利店的小孩。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_lost_child",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "小孩找不到回家的路，但努力不让自己哭出来。"
+		}
+	},
+	{
+		"id": "driver_profile",
+		"story_id": "driver_story",
+		"display_name": "失眠的司机",
+		"customer_type": "driver",
+		"short_description": "像是已经开了很久车的司机。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_driver",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "他不知道自己该停下，还是继续往前。困意和路灯一起拖着他。"
+		}
+	},
+	{
+		"id": "nameless_profile",
+		"story_id": "nameless_story",
+		"display_name": "忘记名字的客人",
+		"customer_type": "strange",
+		"short_description": "记得要买什么，却忘了自己是谁的客人。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_nameless_guest",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "这位客人记得自己的需求，却忘记了名字。真实感在他身上变得很薄。"
+		}
+	},
+	{
+		"id": "previous_clerk_profile",
+		"story_id": "previous_clerk_story",
+		"display_name": "上一任店员",
+		"customer_type": "special",
+		"short_description": "与这家店有关的特殊客人。",
+		"locked_description": "尚未遇见。",
+		"portrait_id": "placeholder_previous_clerk",
+		"archive_stages": {
+			"0": "尚未遇见。",
+			"1": "上一任店员想买回离开这里的理由。你还不知道这句话真正指向哪里。"
+		}
+	}
+]

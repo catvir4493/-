@@ -20,6 +20,7 @@ enum GameState {
 	RESULT,
 	RESTOCK,
 	NIGHT_COMPLETE,
+	ARCHIVE,
 	PAUSED
 }
 
@@ -35,6 +36,7 @@ const STATE_NAMES := {
 	GameState.RESULT: "result",
 	GameState.RESTOCK: "restock",
 	GameState.NIGHT_COMPLETE: "night_complete",
+	GameState.ARCHIVE: "archive",
 	GameState.PAUSED: "paused"
 }
 
@@ -43,7 +45,8 @@ var scene_paths := {
 	GameState.SHOP: "res://scenes/shop/ShopScene.tscn",
 	GameState.RESULT: "res://scenes/result/ResultScene.tscn",
 	GameState.NIGHT_COMPLETE: "res://scenes/night_result/NightResultScene.tscn",
-	GameState.RESTOCK: "res://scenes/restock/RestockScene.tscn"
+	GameState.RESTOCK: "res://scenes/restock/RestockScene.tscn",
+	GameState.ARCHIVE: "res://scenes/archive/ArchiveScene.tscn"
 }
 
 var game_state: int = GameState.BOOT
@@ -77,6 +80,7 @@ func start_new_game(change_scene: bool = true) -> void:
 	last_result = {}
 	last_service_result = {}
 	pending_customer_id = ""
+	_reset_customer_progress()
 
 	var inventory_system: Node = _get_inventory_system()
 	if inventory_system != null and inventory_system.has_method("reset_to_default_stock"):
@@ -90,7 +94,7 @@ func start_new_game(change_scene: bool = true) -> void:
 		if save_manager.has_method("new_game"):
 			save_manager.new_game(current_night, money)
 		if save_manager.has_method("save_game"):
-			save_manager.save_game(_build_save_data())
+			save_manager.save_game("shop")
 
 	_set_state(GameState.SHOP)
 	game_started.emit()
@@ -101,33 +105,23 @@ func start_new_game(change_scene: bool = true) -> void:
 
 func load_game(change_scene: bool = true) -> bool:
 	var save_manager = _get_save_manager()
-	if save_manager == null or not save_manager.has_method("load_game"):
+	if save_manager == null or not save_manager.has_method("continue_game"):
 		push_warning("SaveManager is not available.")
 		return false
 
-	var save_data: Dictionary = save_manager.load_game()
-	if save_data.is_empty():
-		return false
-
-	_apply_save_data(save_data)
-	_start_customer_queue()
-	_start_night_stats()
-	_set_state(GameState.SHOP)
-	game_loaded.emit()
-
-	if change_scene:
-		_change_scene_for_state(GameState.SHOP)
-
-	return true
+	var loaded: bool = save_manager.continue_game()
+	if loaded:
+		game_loaded.emit()
+	return loaded
 
 
-func save_game() -> bool:
+func save_game(checkpoint_scene: String = "shop") -> bool:
 	var save_manager = _get_save_manager()
 	if save_manager == null or not save_manager.has_method("save_game"):
 		push_warning("SaveManager is not available.")
 		return false
 
-	var saved: bool = save_manager.save_game(_build_save_data())
+	var saved: bool = save_manager.save_game(checkpoint_scene)
 	if saved:
 		game_saved.emit()
 
@@ -213,8 +207,9 @@ func continue_current_night(change_scene: bool = true) -> void:
 		_change_scene_for_state(GameState.SHOP)
 
 
-func go_to_restock(change_scene: bool = true) -> void:
-	save_game()
+func go_to_restock(change_scene: bool = true, save_checkpoint: bool = true) -> void:
+	if save_checkpoint:
+		save_game("restock")
 	_set_state(GameState.RESTOCK)
 
 	if change_scene:
@@ -226,6 +221,13 @@ func go_to_night_result(change_scene: bool = true) -> void:
 
 	if change_scene:
 		_change_scene_for_state(GameState.NIGHT_COMPLETE)
+
+
+func go_to_archive(change_scene: bool = true) -> void:
+	_set_state(GameState.ARCHIVE)
+
+	if change_scene:
+		_change_scene_for_state(GameState.ARCHIVE)
 
 
 func finish_restock(change_scene: bool = true) -> void:
@@ -241,7 +243,7 @@ func start_next_night(change_scene: bool = true) -> void:
 	_start_night_stats()
 	_set_state(GameState.SHOP)
 	night_started.emit(current_night)
-	save_game()
+	save_game("shop")
 
 	if change_scene:
 		_change_scene_for_state(GameState.SHOP)
@@ -252,7 +254,7 @@ func advance_night(save_after_advance: bool = true) -> void:
 	_set_state(GameState.NIGHT_COMPLETE)
 
 	if save_after_advance:
-		save_game()
+		save_game("night_result")
 
 
 func set_current_night(value: int) -> void:
@@ -402,6 +404,10 @@ func _get_night_stats_system() -> Node:
 	return get_node_or_null("/root/NightStatsSystem")
 
 
+func _get_customer_progress_system() -> Node:
+	return get_node_or_null("/root/CustomerProgressSystem")
+
+
 func _start_customer_queue() -> void:
 	var customer_system: Node = _get_customer_system()
 	if customer_system != null and customer_system.has_method("generate_night_queue"):
@@ -412,6 +418,12 @@ func _start_night_stats() -> void:
 	var night_stats_system: Node = _get_night_stats_system()
 	if night_stats_system != null and night_stats_system.has_method("start_night"):
 		night_stats_system.start_night(current_night)
+
+
+func _reset_customer_progress() -> void:
+	var customer_progress_system: Node = _get_customer_progress_system()
+	if customer_progress_system != null and customer_progress_system.has_method("reset_progress"):
+		customer_progress_system.reset_progress()
 
 
 func _mark_combo_discovered_from_result(result: Dictionary) -> void:

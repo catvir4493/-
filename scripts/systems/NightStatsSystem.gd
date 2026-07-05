@@ -71,6 +71,38 @@ func get_night_summary() -> Dictionary:
 	}
 
 
+func export_night_stats() -> Dictionary:
+	return {
+		"night_number": night_number,
+		"customers_served": customers_served,
+		"perfect_count": perfect_count,
+		"good_count": good_count,
+		"normal_count": normal_count,
+		"fail_count": fail_count,
+		"total_income": total_income,
+		"total_score": total_score,
+		"triggered_combo_count": triggered_combo_count,
+		"triggered_combo_ids": triggered_combo_ids.duplicate(),
+		"triggered_combo_names": triggered_combo_names.duplicate()
+	}
+
+
+func import_night_stats(data: Dictionary) -> bool:
+	night_number = maxi(_to_int(data.get("night_number", night_number), night_number), 1)
+	customers_served = maxi(_to_int(data.get("customers_served", 0), 0), 0)
+	perfect_count = maxi(_to_int(data.get("perfect_count", 0), 0), 0)
+	good_count = maxi(_to_int(data.get("good_count", 0), 0), 0)
+	normal_count = maxi(_to_int(data.get("normal_count", 0), 0), 0)
+	fail_count = maxi(_to_int(data.get("fail_count", 0), 0), 0)
+	total_income = maxi(_to_int(data.get("total_income", 0), 0), 0)
+	total_score = maxi(_to_int(data.get("total_score", 0), 0), 0)
+	triggered_combo_count = maxi(_to_int(data.get("triggered_combo_count", 0), 0), 0)
+	triggered_combo_ids = _to_unique_string_array(data.get("triggered_combo_ids", []))
+	triggered_combo_names = _to_unique_string_array(data.get("triggered_combo_names", []))
+	_recorded_service_ids.clear()
+	return true
+
+
 func get_average_score() -> float:
 	if customers_served <= 0:
 		return 0.0
@@ -167,3 +199,27 @@ func _append_unique(values: Array[String], value: String) -> void:
 		return
 
 	values.append(value)
+
+
+func _to_int(value, default_value: int) -> int:
+	if value is int:
+		return value
+
+	if value is float:
+		return int(value)
+
+	if value is String and value.is_valid_int():
+		return int(value)
+
+	return default_value
+
+
+func _to_unique_string_array(value) -> Array[String]:
+	var result: Array[String] = []
+	if not (value is Array):
+		return result
+
+	for entry in value:
+		_append_unique(result, str(entry))
+
+	return result
