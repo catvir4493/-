@@ -2,10 +2,10 @@
 	{
 		"id": "coffee",
 		"name": "罐装咖啡",
-		"description": "喝完会清醒，也会更焦虑。",
+		"description": "喝完会清醒，也会让今晚显得更长。",
 		"buy_price": 3,
 		"sell_price": 6,
-		"tags": ["清醒", "焦虑", "短效"],
+		"tags": ["清醒", "短效", "孤独"],
 		"rarity": "common",
 		"unlock_day": 1,
 		"max_stock": 10
@@ -93,7 +93,7 @@
 		"description": "遮住光，也遮住今晚不想看的东西。",
 		"buy_price": 3,
 		"sell_price": 7,
-		"tags": ["睡眠", "逃避", "短效"],
+		"tags": ["睡眠", "逃避", "遗忘"],
 		"rarity": "common",
 		"unlock_day": 1,
 		"max_stock": 6
@@ -108,5 +108,115 @@
 		"rarity": "common",
 		"unlock_day": 1,
 		"max_stock": 10
+	},
+	{
+		"id": "tissue",
+		"name": "纸巾",
+		"description": "薄薄几张，足够让眼泪有地方落下。",
+		"buy_price": 1,
+		"sell_price": 4,
+		"tags": ["安慰", "悲伤", "温和"],
+		"rarity": "common",
+		"unlock_day": 2,
+		"max_stock": 12
+	},
+	{
+		"id": "dark_chocolate",
+		"name": "黑巧克力",
+		"description": "苦味留得久一点，甜味来得慢一点。",
+		"buy_price": 3,
+		"sell_price": 7,
+		"tags": ["安慰", "冷静", "短效"],
+		"rarity": "common",
+		"unlock_day": 2,
+		"max_stock": 8
+	},
+	{
+		"id": "disposable_camera",
+		"name": "一次性相机",
+		"description": "只能拍有限的几张，好像这样回忆就会慎重一点。",
+		"buy_price": 6,
+		"sell_price": 13,
+		"tags": ["回忆", "真实", "连接"],
+		"rarity": "uncommon",
+		"unlock_day": 2,
+		"max_stock": 3
+	},
+	{
+		"id": "blank_postcard",
+		"name": "空白明信片",
+		"description": "没有写地址，也没有写下迟到太久的话。",
+		"buy_price": 2,
+		"sell_price": 6,
+		"tags": ["连接", "勇气", "希望"],
+		"rarity": "common",
+		"unlock_day": 2,
+		"max_stock": 8
+	},
+	{
+		"id": "battery",
+		"name": "电池",
+		"description": "小小一节，能让某些东西再亮一会儿。",
+		"buy_price": 2,
+		"sell_price": 5,
+		"tags": ["长期", "希望", "连接"],
+		"rarity": "common",
+		"unlock_day": 3,
+		"max_stock": 10
+	},
+	{
+		"id": "flashlight",
+		"name": "手电筒",
+		"description": "光不大，但足够确认脚下还有路。",
+		"buy_price": 5,
+		"sell_price": 11,
+		"tags": ["保护", "希望", "真实"],
+		"rarity": "uncommon",
+		"unlock_day": 3,
+		"max_stock": 4
+	},
+	{
+		"id": "cheap_perfume",
+		"name": "便宜香水",
+		"description": "像临时借来的自信，挥发得很快。",
+		"buy_price": 4,
+		"sell_price": 9,
+		"tags": ["连接", "回忆", "冲动"],
+		"rarity": "common",
+		"unlock_day": 3,
+		"max_stock": 5
+	},
+	{
+		"id": "expired_magazine",
+		"name": "过期杂志",
+		"description": "封面还在笑，里面的日期早就过去了。",
+		"buy_price": 1,
+		"sell_price": 4,
+		"tags": ["回忆", "逃避", "孤独"],
+		"rarity": "common",
+		"unlock_day": 4,
+		"max_stock": 6
+	},
+	{
+		"id": "lucky_sticker",
+		"name": "幸运贴纸",
+		"description": "贴上去不会改变命运，但会让人愿意再试一次。",
+		"buy_price": 1,
+		"sell_price": 4,
+		"tags": ["希望", "安慰", "短效"],
+		"rarity": "common",
+		"unlock_day": 4,
+		"max_stock": 10
+	},
+	{
+		"id": "coin",
+		"name": "硬币",
+		"description": "正面或反面，至少能替犹豫的人做一次决定。",
+		"buy_price": 0,
+		"sell_price": 3,
+		"tags": ["希望", "连接", "短效"],
+		"rarity": "rare",
+		"unlock_day": 5,
+		"max_stock": 1
 	}
 ]

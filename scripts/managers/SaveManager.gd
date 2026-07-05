@@ -51,16 +51,7 @@ func create_save_data(checkpoint_scene: String) -> Dictionary:
 func save_game(checkpoint_scene: String = "shop") -> bool:
 	var save_data := create_save_data(checkpoint_scene)
 	current_save = save_data.duplicate(true)
-	_ensure_save_directory(SAVE_PATH)
-
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
-		_report_save_failure("Could not open save file for writing. Error code: %s." % FileAccess.get_open_error())
-		return false
-
-	file.store_string(JSON.stringify(save_data, "\t"))
-	save_written.emit(get_save_data())
-	return true
+	return _write_save_data(save_data, true)
 
 
 func load_save_data() -> Dictionary:
@@ -105,11 +96,15 @@ func apply_save_data(save_data: Dictionary) -> bool:
 	GameManager.last_service_result = {}
 	GameManager.pending_customer_id = ""
 
+	var inventory_migration_needed := _inventory_data_missing_known_items(normalized["inventory"])
 	if not InventorySystem.import_inventory_data(normalized["inventory"]):
 		push_warning("Inventory data could not be fully restored; default inventory was used where needed.")
+	current_save["inventory"] = InventorySystem.export_inventory_data()
 
 	set_discovered_combos(normalized["discovered_combos"])
 	_import_customer_progress_from_save_data(normalized)
+	if inventory_migration_needed:
+		_write_save_data(current_save, false)
 
 	var checkpoint := str(normalized["checkpoint_scene"])
 	if checkpoint == "shop":
@@ -387,6 +382,24 @@ func _get_customer_progress_system() -> Node:
 	return get_node_or_null("/root/CustomerProgressSystem")
 
 
+func _inventory_data_missing_known_items(inventory) -> bool:
+	if not (inventory is Dictionary):
+		return true
+
+	for item in DataManager.get_all_items():
+		if not (item is Dictionary):
+			continue
+
+		var item_id := str(item.get("id", ""))
+		if item_id.is_empty():
+			continue
+
+		if not inventory.has(item_id):
+			return true
+
+	return false
+
+
 func _normalize_save_data(raw_data: Dictionary) -> Dictionary:
 	var save_version := _read_save_version(raw_data)
 	if save_version > CURRENT_SAVE_VERSION:
@@ -521,6 +534,21 @@ func _ensure_save_directory(save_path: String) -> void:
 
 	if not DirAccess.dir_exists_absolute(save_directory):
 		DirAccess.make_dir_recursive_absolute(save_directory)
+
+
+func _write_save_data(save_data: Dictionary, emit_written_signal: bool) -> bool:
+	_ensure_save_directory(SAVE_PATH)
+
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		_report_save_failure("Could not open save file for writing. Error code: %s." % FileAccess.get_open_error())
+		return false
+
+	file.store_string(JSON.stringify(save_data, "\t"))
+	if emit_written_signal:
+		save_written.emit(get_save_data())
+
+	return true
 
 
 func _report_save_failure(message: String) -> void:

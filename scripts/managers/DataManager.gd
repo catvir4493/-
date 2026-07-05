@@ -37,7 +37,7 @@ func load_all_data() -> bool:
 		customers = {}
 		all_loaded = false
 	else:
-		customers = loaded_customers
+		customers = _with_customer_request_defaults(loaded_customers)
 
 	var loaded_combos = _load_dataset("combos", COMBOS_PATH, "combos")
 	if loaded_combos == null:
@@ -205,6 +205,40 @@ func _load_json(path: String, data_type: String):
 	return json.data
 
 
+func _with_customer_request_defaults(collection):
+	if collection is Array:
+		var result := []
+		for value in collection:
+			if value is Dictionary:
+				result.append(_with_single_customer_request_defaults(value))
+			else:
+				result.append(value)
+
+		return result
+
+	if collection is Dictionary:
+		var result := {}
+		for key in collection.keys():
+			var value = collection[key]
+			if value is Dictionary:
+				result[key] = _with_single_customer_request_defaults(value)
+			else:
+				result[key] = value
+
+		return result
+
+	return collection
+
+
+func _with_single_customer_request_defaults(customer: Dictionary) -> Dictionary:
+	var normalized := customer.duplicate(true)
+	normalized["story_stage"] = maxi(_to_int(normalized.get("story_stage", 1), 1), 1)
+	normalized["min_night"] = maxi(_to_int(normalized.get("min_night", 1), 1), 1)
+	normalized["min_visit_count"] = maxi(_to_int(normalized.get("min_visit_count", 0), 0), 0)
+	normalized["one_time"] = bool(normalized.get("one_time", false))
+	return normalized
+
+
 func _collection_to_array(collection) -> Array:
 	if collection is Array:
 		return collection.duplicate(true)
@@ -257,6 +291,19 @@ func _as_dictionary(value) -> Dictionary:
 		return value.duplicate(true)
 
 	return {}
+
+
+func _to_int(value, default_value: int) -> int:
+	if value is int:
+		return value
+
+	if value is float:
+		return int(value)
+
+	if value is String and value.is_valid_int():
+		return int(value)
+
+	return default_value
 
 
 func _report_load_failure(data_type: String, path: String, message: String) -> void:

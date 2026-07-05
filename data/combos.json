@@ -38,5 +38,37 @@
 		"bonus_tags": ["清醒", "希望"],
 		"score_bonus": 15,
 		"special_dialogue": "不是每个早晨都值得期待，但至少可以撑到它来。"
+	},
+	{
+		"id": "combo_cry_tonight",
+		"name": "今晚先哭吧",
+		"required_items": ["tissue", "milk"],
+		"bonus_tags": ["安慰", "温和"],
+		"score_bonus": 15,
+		"special_dialogue": "有时候先哭出来，明天才有地方放下新的事。"
+	},
+	{
+		"id": "combo_find_way",
+		"name": "找路套餐",
+		"required_items": ["flashlight", "battery"],
+		"bonus_tags": ["保护", "希望"],
+		"score_bonus": 20,
+		"special_dialogue": "光和电凑在一起，路就不再只是一种想象。"
+	},
+	{
+		"id": "combo_unsent_confession",
+		"name": "没寄出的告白",
+		"required_items": ["blank_postcard", "cheap_perfume"],
+		"bonus_tags": ["连接", "勇气"],
+		"score_bonus": 15,
+		"special_dialogue": "香味会散，没写出口的话也会。至少现在还有一张空白明信片。"
+	},
+	{
+		"id": "combo_better_tomorrow",
+		"name": "明天会好一点",
+		"required_items": ["rice_ball", "lucky_sticker"],
+		"bonus_tags": ["希望", "安慰"],
+		"score_bonus": 15,
+		"special_dialogue": "热饭团和小小的幸运，足够把今晚撑过去。"
 	}
 ]
