@@ -86,6 +86,10 @@ func get_combos() -> Array:
 	return _collection_to_array(combos)
 
 
+func get_all_combos() -> Array:
+	return get_combos()
+
+
 func get_nights() -> Array:
 	return _collection_to_array(nights)
 
@@ -108,6 +112,10 @@ func get_customer_by_id(customer_id: String) -> Dictionary:
 
 func get_combo(combo_id: String) -> Dictionary:
 	return _get_record(combos, combo_id)
+
+
+func get_combo_by_id(combo_id: String) -> Dictionary:
+	return get_combo(combo_id)
 
 
 func get_night(night_id: int) -> Dictionary:
@@ -204,6 +212,7 @@ func _record_matches_id(record: Dictionary, record_key: String) -> bool:
 
 	return (
 		str(record.get("id", "")) == record_key
+		or str(record.get("combo_id", "")) == record_key
 		or str(record.get("night", "")) == record_key
 		or str(record.get("number", "")) == record_key
 	)

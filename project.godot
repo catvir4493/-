@@ -22,6 +22,8 @@ SaveManager="*res://scripts/managers/SaveManager.gd"
 InventorySystem="*res://scripts/systems/InventorySystem.gd"
 CustomerSystem="*res://scripts/systems/CustomerSystem.gd"
 ScoreSystem="*res://scripts/systems/ScoreSystem.gd"
+ComboSystem="*res://scripts/systems/ComboSystem.gd"
+NightStatsSystem="*res://scripts/systems/NightStatsSystem.gd"
 GameManager="*res://scripts/managers/GameManager.gd"
 
 [dotnet]

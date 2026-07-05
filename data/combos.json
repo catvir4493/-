@@ -1,3 +1,42 @@
-{
-	"combos": []
-}
+[
+	{
+		"id": "combo_overtime",
+		"name": "熬夜套餐",
+		"required_items": ["coffee", "mint_candy"],
+		"bonus_tags": ["清醒", "短效"],
+		"score_bonus": 20,
+		"special_dialogue": "这组合闻起来像明天早上的后悔。"
+	},
+	{
+		"id": "combo_nostalgia",
+		"name": "怀旧套餐",
+		"required_items": ["milk", "old_photo"],
+		"bonus_tags": ["回忆", "安慰"],
+		"score_bonus": 20,
+		"special_dialogue": "温热的牛奶让旧照片里的时间慢了下来。"
+	},
+	{
+		"id": "combo_escape",
+		"name": "逃跑套餐",
+		"required_items": ["black_umbrella", "ticket"],
+		"bonus_tags": ["隐藏", "逃避"],
+		"score_bonus": 20,
+		"special_dialogue": "有些人不是想去远方，只是不想被找到。"
+	},
+	{
+		"id": "combo_after_impulse",
+		"name": "冲动后的补救",
+		"required_items": ["red_lighter", "bandage"],
+		"bonus_tags": ["勇气", "保护"],
+		"score_bonus": 15,
+		"special_dialogue": "火光之后，至少还需要一点包扎。"
+	},
+	{
+		"id": "combo_soft_morning",
+		"name": "撑到天亮",
+		"required_items": ["coffee", "rice_ball"],
+		"bonus_tags": ["清醒", "希望"],
+		"score_bonus": 15,
+		"special_dialogue": "不是每个早晨都值得期待，但至少可以撑到它来。"
+	}
+]

@@ -42,6 +42,7 @@ var scene_paths := {
 	GameState.MAIN_MENU: "res://scenes/main_menu/MainMenu.tscn",
 	GameState.SHOP: "res://scenes/shop/ShopScene.tscn",
 	GameState.RESULT: "res://scenes/result/ResultScene.tscn",
+	GameState.NIGHT_COMPLETE: "res://scenes/night_result/NightResultScene.tscn",
 	GameState.RESTOCK: "res://scenes/restock/RestockScene.tscn"
 }
 
@@ -82,6 +83,7 @@ func start_new_game(change_scene: bool = true) -> void:
 		inventory_system.reset_to_default_stock()
 
 	_start_customer_queue()
+	_start_night_stats()
 
 	var save_manager = _get_save_manager()
 	if save_manager != null:
@@ -109,6 +111,7 @@ func load_game(change_scene: bool = true) -> bool:
 
 	_apply_save_data(save_data)
 	_start_customer_queue()
+	_start_night_stats()
 	_set_state(GameState.SHOP)
 	game_loaded.emit()
 
@@ -146,6 +149,7 @@ func start_night(night_id: int = -1, change_scene: bool = true) -> void:
 	last_service_result = {}
 	pending_customer_id = ""
 	_start_customer_queue()
+	_start_night_stats()
 	_set_state(GameState.SHOP)
 	night_started.emit(current_night)
 
@@ -195,6 +199,7 @@ func show_result(result: Dictionary = {}, change_scene: bool = true) -> void:
 func set_last_service_result(result: Dictionary) -> void:
 	last_service_result = result.duplicate(true)
 	last_result = last_service_result.duplicate(true)
+	_mark_combo_discovered_from_result(last_service_result)
 
 
 func get_last_service_result() -> Dictionary:
@@ -216,9 +221,30 @@ func go_to_restock(change_scene: bool = true) -> void:
 		_change_scene_for_state(GameState.RESTOCK)
 
 
+func go_to_night_result(change_scene: bool = true) -> void:
+	_set_state(GameState.NIGHT_COMPLETE)
+
+	if change_scene:
+		_change_scene_for_state(GameState.NIGHT_COMPLETE)
+
+
 func finish_restock(change_scene: bool = true) -> void:
-	advance_night()
-	start_night(current_night, change_scene)
+	start_next_night(change_scene)
+
+
+func start_next_night(change_scene: bool = true) -> void:
+	current_night = current_night + 1
+	last_result = {}
+	last_service_result = {}
+	pending_customer_id = ""
+	_start_customer_queue()
+	_start_night_stats()
+	_set_state(GameState.SHOP)
+	night_started.emit(current_night)
+	save_game()
+
+	if change_scene:
+		_change_scene_for_state(GameState.SHOP)
 
 
 func advance_night(save_after_advance: bool = true) -> void:
@@ -372,10 +398,46 @@ func _get_customer_system() -> Node:
 	return get_node_or_null("/root/CustomerSystem")
 
 
+func _get_night_stats_system() -> Node:
+	return get_node_or_null("/root/NightStatsSystem")
+
+
 func _start_customer_queue() -> void:
 	var customer_system: Node = _get_customer_system()
 	if customer_system != null and customer_system.has_method("generate_night_queue"):
 		customer_system.generate_night_queue(current_night)
+
+
+func _start_night_stats() -> void:
+	var night_stats_system: Node = _get_night_stats_system()
+	if night_stats_system != null and night_stats_system.has_method("start_night"):
+		night_stats_system.start_night(current_night)
+
+
+func _mark_combo_discovered_from_result(result: Dictionary) -> void:
+	var save_manager: Node = _get_save_manager()
+	if save_manager == null or not save_manager.has_method("mark_combo_discovered"):
+		return
+
+	var triggered_combos = result.get("triggered_combos", [])
+	if triggered_combos is Array:
+		if not triggered_combos.is_empty():
+			for combo in triggered_combos:
+				if combo is Dictionary:
+					_mark_single_combo_discovered(save_manager, combo)
+			return
+
+	var combo_result = result.get("combo_result", {})
+	if combo_result is Dictionary:
+		_mark_single_combo_discovered(save_manager, combo_result)
+
+
+func _mark_single_combo_discovered(save_manager: Node, combo_result: Dictionary) -> void:
+	var combo_id := str(combo_result.get("id", ""))
+	if combo_id.is_empty():
+		return
+
+	save_manager.mark_combo_discovered(combo_id)
 
 
 func _report_scene_failure(scene_path: String, message: String) -> void:

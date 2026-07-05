@@ -3,7 +3,6 @@ extends Node
 const REQUIRED_TAG_SCORE := 20
 const AVOID_TAG_SCORE := -20
 const ITEM_SCORE := 5
-const COMBO_SCORE := 0
 
 
 func calculate_score(customer_data: Dictionary, selected_item_ids: Array) -> Dictionary:
@@ -30,7 +29,16 @@ func calculate_score(customer_data: Dictionary, selected_item_ids: Array) -> Dic
 		var tags = item.get("tags", [])
 		if tags is Array:
 			for tag in tags:
-				selected_tags.append(str(tag))
+				_append_unique(selected_tags, str(tag))
+
+	var triggered_combos: Array = ComboSystem.find_triggered_combos(normalized_item_ids)
+	var combo_score_bonus: int = ComboSystem.get_combo_score_bonus(triggered_combos)
+	var combo_bonus_tags: Array = ComboSystem.get_bonus_tags(triggered_combos)
+	var combo_names: Array = ComboSystem.get_combo_names(triggered_combos)
+	var combo_special_dialogues: Array = ComboSystem.get_special_dialogues(triggered_combos)
+
+	for tag in combo_bonus_tags:
+		_append_unique(selected_tags, str(tag))
 
 	var required_tags: Array[String] = _to_string_array(customer_data.get("required_tags", []))
 	var avoid_tags: Array[String] = _to_string_array(customer_data.get("avoid_tags", []))
@@ -51,11 +59,15 @@ func calculate_score(customer_data: Dictionary, selected_item_ids: Array) -> Dic
 			score += AVOID_TAG_SCORE
 			_append_unique(bad_tags, tag)
 
-	score += COMBO_SCORE
+	score += combo_score_bonus
+
 	score = clampi(score, 0, 100)
 
 	var grade := _get_grade(score)
 	var income := _calculate_income(item_sell_total, int(customer_data.get("base_reward", 0)), grade)
+	var combo_result: Dictionary = {}
+	if not triggered_combos.is_empty() and triggered_combos[0] is Dictionary:
+		combo_result = triggered_combos[0].duplicate(true)
 
 	return {
 		"score": score,
@@ -69,7 +81,13 @@ func calculate_score(customer_data: Dictionary, selected_item_ids: Array) -> Dic
 		"customer_name": str(customer_data.get("customer_name", "")),
 		"customer_dialogue": str(customer_data.get("dialogue", "")),
 		"income": income,
-		"customer_feedback": _get_customer_feedback(grade)
+		"customer_feedback": _get_customer_feedback(grade),
+		"triggered_combos": triggered_combos,
+		"combo_names": combo_names,
+		"combo_score_bonus": combo_score_bonus,
+		"combo_bonus_tags": combo_bonus_tags,
+		"combo_special_dialogues": combo_special_dialogues,
+		"combo_result": combo_result
 	}
 
 

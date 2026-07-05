@@ -378,6 +378,7 @@ func _on_confirm_pressed() -> void:
 
 	var selected_ids: Array[String] = _selected_item_ids.duplicate()
 	var service_result: Dictionary = ScoreSystem.calculate_score(current_customer, selected_ids)
+	service_result["service_id"] = _make_service_id(current_customer)
 
 	if not _has_stock_for_item_ids(selected_ids):
 		_set_feedback("库存不足，请重新选择商品。")
@@ -391,7 +392,7 @@ func _on_confirm_pressed() -> void:
 	print("selected_item_ids: ", JSON.stringify(selected_ids))
 	print("score_result: ", JSON.stringify(service_result))
 
-	GameManager.set_last_service_result(service_result)
+	NightStatsSystem.record_service_result(service_result)
 	GameManager.add_money(int(service_result.get("income", 0)))
 	InventorySystem.consume_items(selected_ids)
 	GameManager.show_result(service_result)
@@ -406,6 +407,14 @@ func _on_clear_pressed() -> void:
 
 func _on_main_menu_pressed() -> void:
 	GameManager.go_to_main_menu()
+
+
+func _make_service_id(customer: Dictionary) -> String:
+	return "%d:%d:%s" % [
+		GameManager.current_night,
+		CustomerSystem.get_current_customer_number(),
+		str(customer.get("id", ""))
+	]
 
 
 func _on_night_changed(_current_night: int) -> void:

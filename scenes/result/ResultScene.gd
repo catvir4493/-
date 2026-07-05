@@ -2,6 +2,7 @@ extends Control
 
 var _title_label: Label
 var _summary_label: Label
+var _continue_button: Button
 
 
 func _ready() -> void:
@@ -40,9 +41,9 @@ func _build_ui() -> void:
 	_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	layout.add_child(_summary_label)
 
-	var continue_button := _make_button("Continue")
-	continue_button.pressed.connect(_on_continue_pressed)
-	layout.add_child(continue_button)
+	_continue_button = _make_button("Continue")
+	_continue_button.pressed.connect(_on_continue_pressed)
+	layout.add_child(_continue_button)
 
 
 func _refresh() -> void:
@@ -63,6 +64,9 @@ func _refresh() -> void:
 		"bad_tags：%s" % _format_array(result.get("bad_tags", [])),
 		"missing_tags：%s" % _format_array(result.get("missing_tags", [])),
 		"income：%d" % int(result.get("income", 0)),
+		"特殊组合：%s" % _format_combo_names(result),
+		"组合加分：+%d" % _get_combo_score_bonus(result),
+		"组合特殊文本：%s" % _format_combo_dialogues(result),
 		"反馈：%s" % str(result.get("customer_feedback", ""))
 	])
 
@@ -84,6 +88,71 @@ func _format_array(value) -> String:
 	return result
 
 
+func _format_combo_names(result: Dictionary) -> String:
+	var combo_names = result.get("combo_names", [])
+	if combo_names is Array and not combo_names.is_empty():
+		return _format_array(combo_names)
+
+	var triggered_combos := _get_triggered_combos(result)
+	if triggered_combos.is_empty():
+		return "未触发特殊组合"
+
+	var names: Array[String] = []
+	for combo in triggered_combos:
+		if combo is Dictionary:
+			names.append(str(combo.get("name", "")))
+
+	return _format_array(names)
+
+
+func _get_combo_score_bonus(result: Dictionary) -> int:
+	if result.has("combo_score_bonus"):
+		return int(result.get("combo_score_bonus", 0))
+
+	var score_bonus := 0
+	for combo in _get_triggered_combos(result):
+		if combo is Dictionary:
+			score_bonus += int(combo.get("score_bonus", 0))
+
+	return score_bonus
+
+
+func _format_combo_dialogues(result: Dictionary) -> String:
+	var combo_dialogues = result.get("combo_special_dialogues", [])
+	if combo_dialogues is Array and not combo_dialogues.is_empty():
+		return _format_array(combo_dialogues)
+
+	var triggered_combos := _get_triggered_combos(result)
+	if triggered_combos.is_empty():
+		return "无"
+
+	var dialogues: Array[String] = []
+	for combo in triggered_combos:
+		if combo is Dictionary:
+			dialogues.append(str(combo.get("special_dialogue", "")))
+
+	return _format_array(dialogues)
+
+
+func _get_triggered_combos(result: Dictionary) -> Array:
+	var triggered_combos = result.get("triggered_combos", [])
+	if triggered_combos is Array and not triggered_combos.is_empty():
+		return triggered_combos
+
+	var combo_result: Dictionary = _as_dictionary(result.get("combo_result", {}))
+	if combo_result.is_empty():
+		return []
+
+	return [combo_result]
+
+
+func _as_dictionary(value) -> Dictionary:
+	if value is Dictionary:
+		return value
+
+	return {}
+
+
 func _make_label(text: String, font_size: int) -> Label:
 	var label := Label.new()
 	label.text = text
@@ -103,9 +172,13 @@ func _make_button(text: String) -> Button:
 
 
 func _on_continue_pressed() -> void:
-	CustomerSystem.move_to_next_customer()
+	if _continue_button.disabled:
+		return
 
-	if CustomerSystem.has_more_customers():
+	_continue_button.disabled = true
+	var has_next_customer := CustomerSystem.move_to_next_customer()
+
+	if has_next_customer:
 		GameManager.continue_current_night()
 	else:
-		GameManager.go_to_restock()
+		GameManager.go_to_night_result()

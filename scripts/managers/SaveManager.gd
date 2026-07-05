@@ -209,6 +209,32 @@ func has_seen_customer(customer_id: String) -> bool:
 	return get_seen_customers().has(customer_id)
 
 
+func get_discovered_combos() -> Array:
+	_ensure_current_save()
+	return current_save["discovered_combos"].duplicate(true)
+
+
+func set_discovered_combos(combo_ids: Array) -> void:
+	_ensure_current_save()
+	current_save["discovered_combos"] = _unique_string_array(combo_ids)
+
+
+func mark_combo_discovered(combo_id: String) -> void:
+	if combo_id.is_empty():
+		return
+
+	_ensure_current_save()
+	var discovered_combos := get_discovered_combos()
+	if not discovered_combos.has(combo_id):
+		discovered_combos.append(combo_id)
+
+	current_save["discovered_combos"] = discovered_combos
+
+
+func has_discovered_combo(combo_id: String) -> bool:
+	return get_discovered_combos().has(combo_id)
+
+
 func _ensure_current_save() -> void:
 	if current_save.is_empty():
 		current_save = create_default_save()

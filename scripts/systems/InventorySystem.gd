@@ -77,6 +77,43 @@ func get_max_stock(item_id: String) -> int:
 	return maxi(int(item.get("max_stock", 0)), 0)
 
 
+func can_buy_item(item_id: String, quantity: int = 1) -> bool:
+	return _get_buy_failure_reason(item_id, quantity).is_empty()
+
+
+func buy_item(item_id: String, quantity: int = 1) -> Dictionary:
+	var result := _make_buy_result(false, "", item_id, quantity, 0, get_stock(item_id), GameManager.money)
+	var reason := _get_buy_failure_reason(item_id, quantity)
+	if not reason.is_empty():
+		result["reason"] = reason
+		return result
+
+	var item: Dictionary = DataManager.get_item_by_id(item_id)
+	var cost := int(item.get("buy_price", 0)) * quantity
+	if cost > 0 and not GameManager.spend_money(cost):
+		result["reason"] = "not_enough_money"
+		result["remaining_money"] = GameManager.money
+		return result
+
+	if not add_stock(item_id, quantity):
+		if cost > 0:
+			GameManager.add_money(cost)
+
+		result["reason"] = "exceeds_max_stock"
+		result["remaining_money"] = GameManager.money
+		return result
+
+	return _make_buy_result(true, "", item_id, quantity, cost, get_stock(item_id), GameManager.money)
+
+
+func is_stock_full(item_id: String) -> bool:
+	var item: Dictionary = DataManager.get_item_by_id(item_id)
+	if item.is_empty():
+		return false
+
+	return get_stock(item_id) >= get_max_stock(item_id)
+
+
 func has_stock(item_id: String, amount: int = 1) -> bool:
 	if amount <= 0:
 		return true
@@ -117,10 +154,10 @@ func add_stock(item_id: String, amount: int = 1) -> bool:
 
 	var max_stock: int = get_max_stock(item_id)
 	var current_stock: int = get_stock(item_id)
-	if current_stock >= max_stock:
+	if current_stock >= max_stock or current_stock + amount > max_stock:
 		return false
 
-	var next_stock: int = mini(current_stock + amount, max_stock)
+	var next_stock: int = current_stock + amount
 	stock_by_item_id[item_id] = next_stock
 	inventory_changed.emit(item_id, next_stock)
 	return true
@@ -130,7 +167,9 @@ func can_add_stock(item_id: String, amount: int = 1) -> bool:
 	if amount <= 0:
 		return false
 
-	return get_stock(item_id) < get_max_stock(item_id)
+	var max_stock := get_max_stock(item_id)
+	var current_stock := get_stock(item_id)
+	return current_stock < max_stock and current_stock + amount <= max_stock
 
 
 func _count_item_ids(item_ids: Array) -> Dictionary:
@@ -154,4 +193,47 @@ func _ensure_initialized() -> void:
 
 
 func _on_data_loaded() -> void:
-	initialize_default_stock()
+	if stock_by_item_id.is_empty():
+		initialize_default_stock()
+
+
+func _get_buy_failure_reason(item_id: String, quantity: int) -> String:
+	if quantity <= 0:
+		return "invalid_quantity"
+
+	var item: Dictionary = DataManager.get_item_by_id(item_id)
+	if item.is_empty():
+		return "item_not_found"
+
+	if not _is_item_unlocked(item):
+		return "item_locked"
+
+	var current_stock := get_stock(item_id)
+	var max_stock := get_max_stock(item_id)
+	if current_stock >= max_stock:
+		return "stock_full"
+
+	if current_stock + quantity > max_stock:
+		return "exceeds_max_stock"
+
+	var cost := int(item.get("buy_price", 0)) * quantity
+	if cost > GameManager.money:
+		return "not_enough_money"
+
+	return ""
+
+
+func _is_item_unlocked(item: Dictionary) -> bool:
+	return int(item.get("unlock_day", 1)) <= GameManager.current_night
+
+
+func _make_buy_result(success: bool, reason: String, item_id: String, quantity: int, cost: int, new_stock: int, remaining_money: int) -> Dictionary:
+	return {
+		"success": success,
+		"reason": reason,
+		"item_id": item_id,
+		"quantity": quantity,
+		"cost": cost,
+		"new_stock": new_stock,
+		"remaining_money": remaining_money
+	}
