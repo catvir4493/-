@@ -1,23 +1,67 @@
 [
 	{
 		"night": 1,
-		"customer_count": 5
+		"title": "第一夜",
+		"is_special_night": false,
+		"customer_slots": [
+			{"story_id": "student_story", "story_stage": 1},
+			{"story_id": "worker_story", "story_stage": 1},
+			{"story_id": "old_man_story", "story_stage": 1},
+			{"story_id": "masked_boy_story", "story_stage": 1},
+			{"story_id": "driver_story", "story_stage": 1}
+		]
 	},
 	{
 		"night": 2,
-		"customer_count": 6
+		"title": "第二夜",
+		"is_special_night": false,
+		"customer_slots": [
+			{"story_id": "wet_man_story", "story_stage": 1},
+			{"story_id": "red_dress_story", "story_stage": 1},
+			{"story_id": "lost_child_story", "story_stage": 1},
+			{"story_id": "nameless_story", "story_stage": 1},
+			{"story_id": "previous_clerk_story", "story_stage": 1},
+			{"story_id": "student_story", "story_stage": 2}
+		]
 	},
 	{
 		"night": 3,
-		"customer_count": 7
+		"title": "第三夜",
+		"is_special_night": false,
+		"customer_slots": [
+			{"story_id": "worker_story", "story_stage": 2},
+			{"story_id": "old_man_story", "story_stage": 2},
+			{"story_id": "masked_boy_story", "story_stage": 2},
+			{"story_id": "driver_story", "story_stage": 2},
+			{"story_id": "wet_man_story", "story_stage": 2},
+			{"story_id": "red_dress_story", "story_stage": 2},
+			{"story_id": "student_story", "story_stage": 3}
+		]
 	},
 	{
 		"night": 4,
-		"customer_count": 8
+		"title": "第四夜",
+		"is_special_night": false,
+		"customer_slots": [
+			{"story_id": "lost_child_story", "story_stage": 2},
+			{"story_id": "nameless_story", "story_stage": 2},
+			{"story_id": "previous_clerk_story", "story_stage": 2},
+			{"story_id": "worker_story", "story_stage": 3},
+			{"story_id": "old_man_story", "story_stage": 3},
+			{"story_id": "masked_boy_story", "story_stage": 3},
+			{"story_id": "driver_story", "story_stage": 3},
+			{"story_id": "wet_man_story", "story_stage": 3}
+		]
 	},
 	{
 		"night": 5,
-		"customer_count": 4,
-		"final_customer_id": "previous_clerk_01"
+		"title": "第五夜",
+		"is_special_night": true,
+		"customer_slots": [
+			{"story_id": "red_dress_story", "story_stage": 3},
+			{"story_id": "lost_child_story", "story_stage": 3},
+			{"story_id": "nameless_story", "story_stage": 3},
+			{"story_id": "previous_clerk_story", "story_stage": 3}
+		]
 	}
 ]

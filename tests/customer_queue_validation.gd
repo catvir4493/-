@@ -3,10 +3,10 @@ extends SceneTree
 const SAVE_PATH := "user://save_data.json"
 const NIGHT_ONE_IDS := [
 	"student_exam_01",
-	"wet_man_01",
-	"red_dress_woman_01",
+	"overtime_worker_01",
 	"silent_old_man_01",
-	"masked_boy_01"
+	"masked_boy_01",
+	"insomnia_driver_01"
 ]
 
 var _failures: Array[String] = []
@@ -187,7 +187,7 @@ func _make_save_after_night_one() -> Dictionary:
 	save_data["current_night"] = 2
 	save_data["money"] = 30
 	save_data["inventory"] = _inventory_system.export_inventory_data()
-	save_data["completed_customer_request_ids"] = NIGHT_ONE_IDS.duplicate()
+	save_data["completed_request_ids"] = NIGHT_ONE_IDS.duplicate()
 
 	var seen_customers: Array[String] = []
 	var progress = {}

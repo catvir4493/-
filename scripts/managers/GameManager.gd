@@ -410,7 +410,12 @@ func _get_customer_progress_system() -> Node:
 
 func _start_customer_queue() -> void:
 	var customer_system: Node = _get_customer_system()
-	if customer_system != null and customer_system.has_method("generate_night_queue"):
+	if customer_system == null:
+		return
+
+	if customer_system.has_method("build_queue_for_night"):
+		customer_system.build_queue_for_night(current_night)
+	elif customer_system.has_method("generate_night_queue"):
 		customer_system.generate_night_queue(current_night)
 
 

@@ -111,6 +111,10 @@ func get_nights() -> Array:
 	return _collection_to_array(nights)
 
 
+func get_all_nights() -> Array:
+	return get_nights()
+
+
 func get_item(item_id: String) -> Dictionary:
 	return _get_record(items, item_id)
 
@@ -153,6 +157,41 @@ func get_customer_profile_by_story_id(story_id: String) -> Dictionary:
 
 func get_night(night_id: int) -> Dictionary:
 	return _get_record(nights, night_id)
+
+
+func get_night_config(night_number: int) -> Dictionary:
+	return get_night(night_number)
+
+
+func get_customer_request_by_story_stage(story_id: String, story_stage: int) -> Dictionary:
+	var story_key := str(story_id)
+	var stage := maxi(_to_int(story_stage, 0), 0)
+	if story_key.is_empty() or stage <= 0:
+		push_error("Customer request lookup requires story_id and story_stage.")
+		return {}
+
+	var matches: Array[Dictionary] = []
+	for customer in get_all_customers():
+		if not (customer is Dictionary):
+			continue
+
+		if str(customer.get("story_id", "")) != story_key:
+			continue
+
+		if _to_int(customer.get("story_stage", 1), 1) != stage:
+			continue
+
+		matches.append(customer.duplicate(true))
+
+	if matches.is_empty():
+		push_error("No customer request found for story_id=%s story_stage=%d." % [story_key, stage])
+		return {}
+
+	if matches.size() > 1:
+		push_error("Multiple customer requests found for story_id=%s story_stage=%d." % [story_key, stage])
+		return {}
+
+	return matches[0].duplicate(true)
 
 
 func find_items_by_tag(tag: String) -> Array:
@@ -278,8 +317,16 @@ func _record_matches_id(record: Dictionary, record_key: String) -> bool:
 		return false
 
 	for key in ["id", "combo_id", "story_id", "night", "number"]:
-		if record.has(key) and str(record.get(key, "")) == record_key:
+		if not record.has(key):
+			continue
+
+		var value = record.get(key, "")
+		if str(value) == record_key:
 			return true
+
+		if record_key.is_valid_int() and (value is int or value is float):
+			if int(value) == int(record_key):
+				return true
 
 	return false
 

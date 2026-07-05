@@ -12,7 +12,7 @@ const GRADE_RANKS := {
 
 var seen_customers: Array[String] = []
 var customer_story_progress: Dictionary = {}
-var completed_customer_request_ids: Array[String] = []
+var completed_request_ids: Array[String] = []
 
 var _recorded_service_ids: Array[String] = []
 
@@ -20,7 +20,7 @@ var _recorded_service_ids: Array[String] = []
 func reset_progress() -> void:
 	seen_customers.clear()
 	customer_story_progress.clear()
-	completed_customer_request_ids.clear()
+	completed_request_ids.clear()
 	_recorded_service_ids.clear()
 
 
@@ -45,7 +45,7 @@ func record_customer_result(customer_data: Dictionary, service_result: Dictionar
 
 	var request_id := str(customer_data.get("id", ""))
 	if not request_id.is_empty():
-		_append_unique_completed_request_id(request_id)
+		mark_request_completed(request_id)
 
 	var was_seen := has_seen_customer(story_id)
 	if not was_seen:
@@ -107,18 +107,30 @@ func get_seen_customers() -> Array:
 
 
 func get_completed_request_ids() -> Array:
-	return completed_customer_request_ids.duplicate()
+	return completed_request_ids.duplicate()
+
+
+func has_completed_request(request_id: String) -> bool:
+	return completed_request_ids.has(request_id)
+
+
+func mark_request_completed(request_id: String) -> bool:
+	if request_id.is_empty() or completed_request_ids.has(request_id):
+		return false
+
+	completed_request_ids.append(request_id)
+	return true
 
 
 func has_completed_request_id(request_id: String) -> bool:
-	return completed_customer_request_ids.has(request_id)
+	return has_completed_request(request_id)
 
 
 func export_progress_data() -> Dictionary:
 	return {
 		"seen_customers": seen_customers.duplicate(),
 		"customer_story_progress": customer_story_progress.duplicate(true),
-		"completed_customer_request_ids": completed_customer_request_ids.duplicate()
+		"completed_request_ids": completed_request_ids.duplicate()
 	}
 
 
@@ -126,7 +138,7 @@ func import_progress_data(data: Dictionary) -> bool:
 	var imported_cleanly := true
 	seen_customers.clear()
 	customer_story_progress.clear()
-	completed_customer_request_ids.clear()
+	completed_request_ids.clear()
 	_recorded_service_ids.clear()
 
 	var imported_seen = data.get("seen_customers", [])
@@ -164,8 +176,8 @@ func import_progress_data(data: Dictionary) -> bool:
 	else:
 		imported_cleanly = false
 
-	if data.has("completed_customer_request_ids"):
-		var imported_completed = data.get("completed_customer_request_ids", [])
+	if data.has("completed_request_ids") or data.has("completed_customer_request_ids"):
+		var imported_completed = data.get("completed_request_ids", data.get("completed_customer_request_ids", []))
 		if imported_completed is Array:
 			for value in imported_completed:
 				var request_id := str(value)
@@ -177,7 +189,7 @@ func import_progress_data(data: Dictionary) -> bool:
 					push_warning("Ignoring unknown completed customer request id from save: %s." % request_id)
 					continue
 
-				_append_unique_completed_request_id(request_id)
+				mark_request_completed(request_id)
 		else:
 			imported_cleanly = false
 
@@ -225,12 +237,6 @@ func _normalize_progress(value) -> Dictionary:
 	if value is Dictionary:
 		progress["current_stage"] = maxi(_to_int(value.get("current_stage", 0), 0), 0)
 		progress["visit_count"] = maxi(_to_int(value.get("visit_count", 0), 0), 0)
-		if int(progress["visit_count"]) >= 1:
-			progress["current_stage"] = maxi(int(progress["current_stage"]), 1)
-		if int(progress["visit_count"]) >= 2:
-			progress["current_stage"] = maxi(int(progress["current_stage"]), 2)
-		if int(progress["visit_count"]) >= 3:
-			progress["current_stage"] = maxi(int(progress["current_stage"]), 3)
 		progress["best_grade"] = _normalize_grade(str(value.get("best_grade", "")))
 		progress["last_grade"] = _normalize_grade(str(value.get("last_grade", "")))
 		progress["best_score"] = maxi(_to_int(value.get("best_score", 0), 0), 0)
@@ -261,13 +267,6 @@ func _append_unique_seen(story_id: String) -> void:
 		return
 
 	seen_customers.append(story_id)
-
-
-func _append_unique_completed_request_id(request_id: String) -> void:
-	if request_id.is_empty() or completed_customer_request_ids.has(request_id):
-		return
-
-	completed_customer_request_ids.append(request_id)
 
 
 func _is_known_story_id(story_id: String) -> bool:

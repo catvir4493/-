@@ -4,17 +4,9 @@ signal night_queue_generated(current_night: int, customer_count: int)
 signal current_customer_changed(customer: Dictionary, customer_index: int)
 signal night_queue_finished(current_night: int)
 
-const FIRST_NIGHT_CUSTOMER_COUNT := 5
-const DEFAULT_NIGHT_CUSTOMER_COUNTS := {
-	1: 5,
-	2: 6,
-	3: 7,
-	4: 8,
-	5: 4
-}
-const DEFAULT_FINAL_CUSTOMERS := {
-	5: "previous_clerk_01"
-}
+const FALLBACK_CUSTOMER_LIMIT := 8
+const FINAL_STORY_ID := "previous_clerk_story"
+const FINAL_STORY_STAGE := 3
 
 var current_night := 1
 var current_customer_index := 0
@@ -26,30 +18,65 @@ func _ready() -> void:
 		DataManager.data_loaded.connect(_on_data_loaded)
 
 	if DataManager.is_loaded():
-		generate_night_queue(current_night)
+		build_queue_for_night(current_night)
 
 
-func generate_night_queue(night: int) -> void:
-	current_night = maxi(night, 1)
-	current_customer_index = 0
-	current_customer_queue.clear()
+func build_queue_for_night(night_number: int) -> bool:
+	var normalized_night := maxi(night_number, 1)
+	reset_queue()
+	current_night = normalized_night
 
-	var all_customers: Array = DataManager.get_all_customers()
-	var customer_count: int = _get_customer_count_for_night(current_night, all_customers.size())
-	current_customer_queue = _build_customer_queue_for_night(all_customers, customer_count, current_night)
+	var night_config := DataManager.get_night_config(normalized_night)
+	if night_config.is_empty():
+		if normalized_night <= 5:
+			push_warning("Night %d has no nights.json config; using fallback queue." % normalized_night)
+		current_customer_queue = _build_fallback_queue(normalized_night, FALLBACK_CUSTOMER_LIMIT)
+	else:
+		current_customer_queue = _build_configured_queue(night_config, normalized_night)
 
-	night_queue_generated.emit(current_night, current_customer_queue.size())
+	night_queue_generated.emit(normalized_night, current_customer_queue.size())
 
 	if has_more_customers():
 		current_customer_changed.emit(get_current_customer(), current_customer_index)
 	else:
-		night_queue_finished.emit(current_night)
+		night_queue_finished.emit(normalized_night)
+
+	return not current_customer_queue.is_empty()
+
+
+func generate_night_queue(night: int) -> void:
+	build_queue_for_night(night)
 
 
 func ensure_night_queue(night: int) -> void:
-	var normalized_night: int = maxi(night, 1)
+	var normalized_night := maxi(night, 1)
 	if current_customer_queue.is_empty() or current_night != normalized_night:
-		generate_night_queue(normalized_night)
+		build_queue_for_night(normalized_night)
+
+
+func reset_queue() -> void:
+	current_customer_index = 0
+	current_customer_queue.clear()
+
+
+func resolve_night_customer_slots(night_config: Dictionary) -> Array:
+	var requests: Array[Dictionary] = []
+	var slots = night_config.get("customer_slots", [])
+	if not (slots is Array):
+		return requests
+
+	for slot in slots:
+		if not (slot is Dictionary):
+			continue
+
+		var request := DataManager.get_customer_request_by_story_stage(
+			str(slot.get("story_id", "")),
+			_to_int(slot.get("story_stage", 0), 0)
+		)
+		if not request.is_empty():
+			requests.append(request)
+
+	return requests
 
 
 func get_current_customer() -> Dictionary:
@@ -105,113 +132,186 @@ func get_current_customer_number() -> int:
 	return current_customer_index + 1
 
 
-func _get_customer_count_for_night(night: int, available_count: int) -> int:
-	if available_count <= 0:
-		return 0
-
-	var night_config := DataManager.get_night(night)
-	if not night_config.is_empty() and night_config.has("customer_count"):
-		return clampi(_to_int(night_config.get("customer_count", FIRST_NIGHT_CUSTOMER_COUNT), FIRST_NIGHT_CUSTOMER_COUNT), 1, available_count)
-
-	var target_count: int = int(DEFAULT_NIGHT_CUSTOMER_COUNTS.get(night, FIRST_NIGHT_CUSTOMER_COUNT + maxi(night - 1, 0)))
-	return clampi(target_count, 1, available_count)
-
-
-func _build_customer_queue_for_night(all_customers: Array, target_count: int, night: int) -> Array[Dictionary]:
+func _build_configured_queue(night_config: Dictionary, night_number: int) -> Array[Dictionary]:
 	var queue: Array[Dictionary] = []
-	if target_count <= 0:
-		return queue
+	var slots = night_config.get("customer_slots", [])
+	if not (slots is Array) or slots.is_empty():
+		push_warning("Night %d has no customer_slots; using fallback queue." % night_number)
+		return _build_fallback_queue(night_number, FALLBACK_CUSTOMER_LIMIT)
 
-	var completed_request_ids := _get_completed_request_ids()
-	var story_progress := _get_story_progress_snapshot()
-	var selected_story_ids: Array[String] = []
-	var final_customer_id := _get_final_customer_id_for_night(night)
-	var final_customer := DataManager.get_customer_by_id(final_customer_id)
-	var has_reserved_final := not final_customer.is_empty() and not completed_request_ids.has(final_customer_id)
-	var final_story_id := str(final_customer.get("story_id", ""))
-	var normal_target_count := target_count
-	if has_reserved_final:
-		normal_target_count = maxi(target_count - 1, 0)
-
-	for customer_value in all_customers:
-		if queue.size() >= normal_target_count:
-			break
-
-		if not (customer_value is Dictionary):
+	for index in range(slots.size()):
+		var slot = slots[index]
+		if not (slot is Dictionary):
+			_warn_slot_unavailable(night_number, index, "", 0, "", "slot is not a Dictionary")
+			_append_fallback_customer(queue, night_number)
 			continue
 
-		var customer: Dictionary = customer_value
-		var request_id := str(customer.get("id", ""))
-		if request_id.is_empty() or request_id == final_customer_id:
+		var story_id := str(slot.get("story_id", ""))
+		var story_stage := _to_int(slot.get("story_stage", 0), 0)
+		var request := _lookup_customer_request(story_id, story_stage)
+		var request_id := str(request.get("id", ""))
+		var unavailable_reason := _get_request_unavailable_reason(request, night_number, queue)
+
+		if not unavailable_reason.is_empty():
+			_warn_slot_unavailable(night_number, index, story_id, story_stage, request_id, unavailable_reason)
+			_append_fallback_customer(queue, night_number)
 			continue
 
-		var story_id := str(customer.get("story_id", ""))
-		var can_chain_final_story := has_reserved_final and not final_story_id.is_empty() and story_id == final_story_id
-		if selected_story_ids.has(story_id) and not can_chain_final_story:
-			continue
-
-		if not _is_customer_available_for_queue(customer, night, completed_request_ids, story_progress):
-			continue
-
-		queue.append(customer.duplicate(true))
-		if not selected_story_ids.has(story_id):
-			selected_story_ids.append(story_id)
-		_simulate_customer_completion(customer, completed_request_ids, story_progress)
-
-	if has_reserved_final and queue.size() < target_count:
-		if _is_customer_available_for_queue(final_customer, night, completed_request_ids, story_progress):
-			queue.append(final_customer.duplicate(true))
-		else:
-			push_warning("Final customer %s is configured for night %d but is not eligible yet." % [final_customer_id, night])
+		queue.append(request.duplicate(true))
 
 	return queue
 
 
-func _is_customer_available_for_queue(customer: Dictionary, night: int, completed_request_ids: Array, story_progress: Dictionary) -> bool:
-	var request_id := str(customer.get("id", ""))
-	if request_id.is_empty() or completed_request_ids.has(request_id):
-		return false
+func _build_fallback_queue(night_number: int, limit: int) -> Array[Dictionary]:
+	var queue: Array[Dictionary] = []
+	var candidates: Array[Dictionary] = []
 
-	var min_night := maxi(_to_int(customer.get("min_night", 1), 1), 1)
-	if min_night > night:
-		return false
+	for customer in DataManager.get_all_customers():
+		if not (customer is Dictionary):
+			continue
 
-	var story_id := str(customer.get("story_id", ""))
-	var progress := _get_progress_for_story(story_progress, story_id)
-	var visit_count := maxi(_to_int(progress.get("visit_count", 0), 0), 0)
-	var current_stage := maxi(_to_int(progress.get("current_stage", 0), 0), 0)
-	var story_stage := maxi(_to_int(customer.get("story_stage", 1), 1), 1)
-	var min_visit_count := maxi(_to_int(customer.get("min_visit_count", 0), 0), 0)
+		if _is_final_story_request(customer):
+			continue
 
-	if visit_count < min_visit_count:
-		return false
+		if not _get_request_unavailable_reason(customer, night_number, queue).is_empty():
+			continue
 
-	if visit_count > 0 and story_stage <= current_stage:
-		return false
+		candidates.append(customer.duplicate(true))
 
-	return true
+	candidates.sort_custom(_sort_fallback_candidates)
+
+	var target_count := clampi(limit, 1, FALLBACK_CUSTOMER_LIMIT)
+	for candidate in candidates:
+		if queue.size() >= target_count:
+			break
+
+		queue.append(candidate.duplicate(true))
+
+	if queue.is_empty():
+		push_warning("Fallback queue for night %d is empty." % night_number)
+
+	return queue
 
 
-func _simulate_customer_completion(customer: Dictionary, completed_request_ids: Array, story_progress: Dictionary) -> void:
-	var request_id := str(customer.get("id", ""))
-	if not request_id.is_empty() and not completed_request_ids.has(request_id):
-		completed_request_ids.append(request_id)
+func _append_fallback_customer(queue: Array[Dictionary], night_number: int) -> void:
+	var candidates := _build_fallback_queue(night_number, FALLBACK_CUSTOMER_LIMIT)
+	for candidate in candidates:
+		var request_id := str(candidate.get("id", ""))
+		if request_id.is_empty() or _queue_has_request_id(queue, request_id):
+			continue
 
-	var story_id := str(customer.get("story_id", ""))
-	if story_id.is_empty():
+		queue.append(candidate.duplicate(true))
 		return
 
-	var progress := _get_progress_for_story(story_progress, story_id)
-	var story_stage := maxi(_to_int(customer.get("story_stage", 1), 1), 1)
-	progress["visit_count"] = maxi(_to_int(progress.get("visit_count", 0), 0), 0) + 1
-	progress["current_stage"] = maxi(maxi(_to_int(progress.get("current_stage", 0), 0), 0), story_stage)
-	progress["last_customer_request_id"] = request_id
-	story_progress[story_id] = progress
+	push_warning("Night %d could not find a fallback customer for an invalid slot." % night_number)
 
 
-func _get_progress_for_story(story_progress: Dictionary, story_id: String) -> Dictionary:
-	if story_progress.has(story_id) and story_progress[story_id] is Dictionary:
-		return story_progress[story_id].duplicate(true)
+func _lookup_customer_request(story_id: String, story_stage: int) -> Dictionary:
+	var matches: Array[Dictionary] = []
+	for customer in DataManager.get_all_customers():
+		if not (customer is Dictionary):
+			continue
+
+		if str(customer.get("story_id", "")) != story_id:
+			continue
+
+		if _to_int(customer.get("story_stage", 1), 1) != story_stage:
+			continue
+
+		matches.append(customer.duplicate(true))
+
+	if matches.size() == 1:
+		return matches[0].duplicate(true)
+
+	return {}
+
+
+func _get_request_unavailable_reason(request: Dictionary, night_number: int, queue: Array[Dictionary]) -> String:
+	if request.is_empty():
+		return "request not found"
+
+	var request_id := str(request.get("id", ""))
+	if request_id.is_empty():
+		return "request id is empty"
+
+	if _queue_has_request_id(queue, request_id):
+		return "request already exists in current queue"
+
+	var story_stage := _to_int(request.get("story_stage", 0), 0)
+	if story_stage < 1 or story_stage > 3:
+		return "story_stage is invalid"
+
+	var min_night := maxi(_to_int(request.get("min_night", 1), 1), 1)
+	if min_night > night_number:
+		return "min_night %d is greater than current night %d" % [min_night, night_number]
+
+	var story_id := str(request.get("story_id", ""))
+	var progress := _get_story_progress(story_id)
+	var visit_count := maxi(_to_int(progress.get("visit_count", 0), 0), 0)
+	var current_stage := maxi(_to_int(progress.get("current_stage", 0), 0), 0)
+	var min_visit_count := maxi(_to_int(request.get("min_visit_count", 0), 0), 0)
+	if min_visit_count > visit_count:
+		return "min_visit_count %d is greater than current visit_count %d" % [min_visit_count, visit_count]
+
+	if bool(request.get("one_time", false)) and _has_completed_request(request_id):
+		return "one_time request is already completed"
+
+	if bool(request.get("one_time", false)) and visit_count > 0 and story_stage <= current_stage:
+		return "story_stage has already been passed"
+
+	if not _passes_story_sequence(story_stage, visit_count, current_stage):
+		return "story_stage would skip previous stages"
+
+	return ""
+
+
+func _passes_story_sequence(story_stage: int, visit_count: int, current_stage: int) -> bool:
+	if story_stage <= 1:
+		return true
+
+	return current_stage >= story_stage - 1 or visit_count >= story_stage - 1
+
+
+func _sort_fallback_candidates(a: Dictionary, b: Dictionary) -> bool:
+	var a_repeatable := bool(a.get("repeatable", false))
+	var b_repeatable := bool(b.get("repeatable", false))
+	if a_repeatable != b_repeatable:
+		return a_repeatable
+
+	return str(a.get("id", "")) < str(b.get("id", ""))
+
+
+func _queue_has_request_id(queue: Array[Dictionary], request_id: String) -> bool:
+	if request_id.is_empty():
+		return false
+
+	for customer in queue:
+		if str(customer.get("id", "")) == request_id:
+			return true
+
+	return false
+
+
+func _is_final_story_request(request: Dictionary) -> bool:
+	return (
+		str(request.get("story_id", "")) == FINAL_STORY_ID
+		and _to_int(request.get("story_stage", 0), 0) == FINAL_STORY_STAGE
+	)
+
+
+func _warn_slot_unavailable(night_number: int, slot_index: int, story_id: String, story_stage: int, request_id: String, reason: String) -> void:
+	push_warning(
+		"Night %d slot %d story_id=%s story_stage=%d request_id=%s unavailable: %s" %
+		[night_number, slot_index + 1, story_id, story_stage, request_id, reason]
+	)
+
+
+func _get_story_progress(story_id: String) -> Dictionary:
+	var customer_progress_system := _get_customer_progress_system()
+	if customer_progress_system != null and customer_progress_system.has_method("get_story_progress"):
+		var progress = customer_progress_system.get_story_progress(story_id)
+		if progress is Dictionary:
+			return progress.duplicate(true)
 
 	return {
 		"current_stage": 0,
@@ -220,34 +320,15 @@ func _get_progress_for_story(story_progress: Dictionary, story_id: String) -> Di
 	}
 
 
-func _get_story_progress_snapshot() -> Dictionary:
+func _has_completed_request(request_id: String) -> bool:
 	var customer_progress_system := _get_customer_progress_system()
-	if customer_progress_system != null and customer_progress_system.has_method("export_progress_data"):
-		var exported = customer_progress_system.export_progress_data()
-		if exported is Dictionary:
-			var progress = exported.get("customer_story_progress", {})
-			if progress is Dictionary:
-				return progress.duplicate(true)
+	if customer_progress_system != null and customer_progress_system.has_method("has_completed_request"):
+		return bool(customer_progress_system.has_completed_request(request_id))
 
-	return {}
+	if customer_progress_system != null and customer_progress_system.has_method("has_completed_request_id"):
+		return bool(customer_progress_system.has_completed_request_id(request_id))
 
-
-func _get_completed_request_ids() -> Array:
-	var customer_progress_system := _get_customer_progress_system()
-	if customer_progress_system != null and customer_progress_system.has_method("get_completed_request_ids"):
-		var request_ids = customer_progress_system.get_completed_request_ids()
-		if request_ids is Array:
-			return request_ids.duplicate()
-
-	return []
-
-
-func _get_final_customer_id_for_night(night: int) -> String:
-	var night_config := DataManager.get_night(night)
-	if not night_config.is_empty() and night_config.has("final_customer_id"):
-		return str(night_config.get("final_customer_id", ""))
-
-	return str(DEFAULT_FINAL_CUSTOMERS.get(night, ""))
+	return false
 
 
 func _get_customer_progress_system() -> Node:
@@ -269,4 +350,4 @@ func _to_int(value, default_value: int) -> int:
 
 func _on_data_loaded() -> void:
 	if current_customer_queue.is_empty():
-		generate_night_queue(current_night)
+		build_queue_for_night(current_night)

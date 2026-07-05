@@ -27,7 +27,7 @@ func create_default_save() -> Dictionary:
 		"unlocked_items": [],
 		"seen_customers": [],
 		"customer_story_progress": {},
-		"completed_customer_request_ids": [],
+		"completed_request_ids": [],
 		"discovered_combos": [],
 		"night_stats": {}
 	}
@@ -44,7 +44,7 @@ func create_save_data(checkpoint_scene: String) -> Dictionary:
 	var progress_data := _export_customer_progress_data()
 	save_data["seen_customers"] = progress_data["seen_customers"]
 	save_data["customer_story_progress"] = progress_data["customer_story_progress"]
-	save_data["completed_customer_request_ids"] = progress_data["completed_customer_request_ids"]
+	save_data["completed_request_ids"] = progress_data["completed_request_ids"]
 	save_data["discovered_combos"] = get_discovered_combos()
 	save_data["night_stats"] = NightStatsSystem.export_night_stats()
 	return save_data
@@ -110,7 +110,7 @@ func apply_save_data(save_data: Dictionary) -> bool:
 
 	var checkpoint := str(normalized["checkpoint_scene"])
 	if checkpoint == "shop":
-		CustomerSystem.generate_night_queue(GameManager.current_night)
+		CustomerSystem.build_queue_for_night(GameManager.current_night)
 		NightStatsSystem.start_night(GameManager.current_night)
 		GameManager.continue_current_night()
 	elif checkpoint == "night_result":
@@ -302,7 +302,11 @@ func get_customer_story_progress() -> Dictionary:
 
 
 func get_completed_customer_request_ids() -> Array:
-	return _export_customer_progress_data()["completed_customer_request_ids"].duplicate()
+	return get_completed_request_ids()
+
+
+func get_completed_request_ids() -> Array:
+	return _export_customer_progress_data()["completed_request_ids"].duplicate()
 
 
 func set_customer_story_progress(progress: Dictionary) -> void:
@@ -348,7 +352,7 @@ func _export_customer_progress_data() -> Dictionary:
 	return {
 		"seen_customers": current_save["seen_customers"].duplicate(true),
 		"customer_story_progress": current_save["customer_story_progress"].duplicate(true),
-		"completed_customer_request_ids": current_save["completed_customer_request_ids"].duplicate(true)
+		"completed_request_ids": current_save["completed_request_ids"].duplicate(true)
 	}
 
 
@@ -356,14 +360,14 @@ func _import_customer_progress_from_save_data(save_data: Dictionary) -> bool:
 	var progress_data := {
 		"seen_customers": save_data.get("seen_customers", []),
 		"customer_story_progress": save_data.get("customer_story_progress", {}),
-		"completed_customer_request_ids": save_data.get("completed_customer_request_ids", [])
+		"completed_request_ids": save_data.get("completed_request_ids", save_data.get("completed_customer_request_ids", []))
 	}
 
 	var normalized := _normalize_progress_export(progress_data)
 	current_save = _with_defaults(current_save)
 	current_save["seen_customers"] = normalized["seen_customers"].duplicate(true)
 	current_save["customer_story_progress"] = normalized["customer_story_progress"].duplicate(true)
-	current_save["completed_customer_request_ids"] = normalized["completed_customer_request_ids"].duplicate(true)
+	current_save["completed_request_ids"] = normalized["completed_request_ids"].duplicate(true)
 
 	var customer_progress_system := _get_customer_progress_system()
 	if customer_progress_system != null and customer_progress_system.has_method("import_progress_data"):
@@ -381,14 +385,14 @@ func _normalize_progress_export(progress_data: Dictionary) -> Dictionary:
 	if not (progress is Dictionary):
 		progress = {}
 
-	var completed = progress_data.get("completed_customer_request_ids", [])
+	var completed = progress_data.get("completed_request_ids", progress_data.get("completed_customer_request_ids", []))
 	if not (completed is Array):
 		completed = []
 
 	return {
 		"seen_customers": _unique_string_array(seen),
 		"customer_story_progress": progress.duplicate(true),
-		"completed_customer_request_ids": _unique_string_array(completed)
+		"completed_request_ids": _unique_string_array(completed)
 	}
 
 
@@ -459,8 +463,11 @@ func _with_defaults(save_data: Dictionary) -> Dictionary:
 	if not (merged.get("customer_story_progress", {}) is Dictionary):
 		merged["customer_story_progress"] = {}
 
-	if not (merged.get("completed_customer_request_ids", []) is Array):
-		merged["completed_customer_request_ids"] = []
+	if not save_data.has("completed_request_ids") and save_data.get("completed_customer_request_ids", []) is Array:
+		merged["completed_request_ids"] = save_data.get("completed_customer_request_ids", []).duplicate(true)
+
+	if not (merged.get("completed_request_ids", []) is Array):
+		merged["completed_request_ids"] = []
 
 	if not (merged.get("discovered_combos", []) is Array):
 		merged["discovered_combos"] = []
@@ -470,7 +477,7 @@ func _with_defaults(save_data: Dictionary) -> Dictionary:
 
 	merged["unlocked_items"] = _unique_string_array(merged["unlocked_items"])
 	merged["seen_customers"] = _unique_string_array(merged["seen_customers"])
-	merged["completed_customer_request_ids"] = _unique_string_array(merged["completed_customer_request_ids"])
+	merged["completed_request_ids"] = _unique_string_array(merged["completed_request_ids"])
 	merged["discovered_combos"] = _unique_string_array(merged["discovered_combos"])
 	merged["inventory"] = merged["inventory"].duplicate(true)
 	merged["customer_story_progress"] = merged["customer_story_progress"].duplicate(true)
