@@ -274,16 +274,14 @@ func _get_record(collection, record_id) -> Dictionary:
 
 
 func _record_matches_id(record: Dictionary, record_key: String) -> bool:
-	if record.is_empty():
+	if record.is_empty() or record_key.is_empty():
 		return false
 
-	return (
-		str(record.get("id", "")) == record_key
-		or str(record.get("combo_id", "")) == record_key
-		or str(record.get("story_id", "")) == record_key
-		or str(record.get("night", "")) == record_key
-		or str(record.get("number", "")) == record_key
-	)
+	for key in ["id", "combo_id", "story_id", "night", "number"]:
+		if record.has(key) and str(record.get(key, "")) == record_key:
+			return true
+
+	return false
 
 
 func _as_dictionary(value) -> Dictionary:

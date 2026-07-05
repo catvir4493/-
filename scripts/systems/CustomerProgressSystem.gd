@@ -12,6 +12,7 @@ const GRADE_RANKS := {
 
 var seen_customers: Array[String] = []
 var customer_story_progress: Dictionary = {}
+var completed_customer_request_ids: Array[String] = []
 
 var _recorded_service_ids: Array[String] = []
 
@@ -19,6 +20,7 @@ var _recorded_service_ids: Array[String] = []
 func reset_progress() -> void:
 	seen_customers.clear()
 	customer_story_progress.clear()
+	completed_customer_request_ids.clear()
 	_recorded_service_ids.clear()
 
 
@@ -41,6 +43,10 @@ func record_customer_result(customer_data: Dictionary, service_result: Dictionar
 
 	_recorded_service_ids.append(service_id)
 
+	var request_id := str(customer_data.get("id", ""))
+	if not request_id.is_empty():
+		_append_unique_completed_request_id(request_id)
+
 	var was_seen := has_seen_customer(story_id)
 	if not was_seen:
 		seen_customers.append(story_id)
@@ -49,13 +55,14 @@ func record_customer_result(customer_data: Dictionary, service_result: Dictionar
 	var progress := _get_or_create_progress(story_id)
 	var grade := _normalize_grade(str(service_result.get("grade", "")))
 	var score := maxi(_to_int(service_result.get("score", 0), 0), 0)
+	var request_stage := maxi(_to_int(customer_data.get("story_stage", 1), 1), 1)
 
 	progress["visit_count"] = maxi(_to_int(progress.get("visit_count", 0), 0), 0) + 1
 	progress["last_grade"] = grade
 	progress["last_score"] = score
 	progress["best_score"] = maxi(_to_int(progress.get("best_score", 0), 0), score)
 	progress["total_score"] = maxi(_to_int(progress.get("total_score", 0), 0), 0) + score
-	progress["last_customer_request_id"] = str(customer_data.get("id", ""))
+	progress["last_customer_request_id"] = request_id
 
 	var best_grade := _normalize_grade(str(progress.get("best_grade", "")))
 	if best_grade.is_empty() or _grade_rank(grade) > _grade_rank(best_grade):
@@ -65,6 +72,9 @@ func record_customer_result(customer_data: Dictionary, service_result: Dictionar
 	current_stage = maxi(current_stage, 1)
 	if int(progress["visit_count"]) >= 2:
 		current_stage = maxi(current_stage, 2)
+	if int(progress["visit_count"]) >= 3:
+		current_stage = maxi(current_stage, 3)
+	current_stage = maxi(current_stage, request_stage)
 	progress["current_stage"] = current_stage
 
 	customer_story_progress[story_id] = progress
@@ -96,10 +106,19 @@ func get_seen_customers() -> Array:
 	return seen_customers.duplicate()
 
 
+func get_completed_request_ids() -> Array:
+	return completed_customer_request_ids.duplicate()
+
+
+func has_completed_request_id(request_id: String) -> bool:
+	return completed_customer_request_ids.has(request_id)
+
+
 func export_progress_data() -> Dictionary:
 	return {
 		"seen_customers": seen_customers.duplicate(),
-		"customer_story_progress": customer_story_progress.duplicate(true)
+		"customer_story_progress": customer_story_progress.duplicate(true),
+		"completed_customer_request_ids": completed_customer_request_ids.duplicate()
 	}
 
 
@@ -107,6 +126,7 @@ func import_progress_data(data: Dictionary) -> bool:
 	var imported_cleanly := true
 	seen_customers.clear()
 	customer_story_progress.clear()
+	completed_customer_request_ids.clear()
 	_recorded_service_ids.clear()
 
 	var imported_seen = data.get("seen_customers", [])
@@ -143,6 +163,23 @@ func import_progress_data(data: Dictionary) -> bool:
 				_append_unique_seen(story_id)
 	else:
 		imported_cleanly = false
+
+	if data.has("completed_customer_request_ids"):
+		var imported_completed = data.get("completed_customer_request_ids", [])
+		if imported_completed is Array:
+			for value in imported_completed:
+				var request_id := str(value)
+				if request_id.is_empty():
+					continue
+
+				if not _is_known_request_id(request_id):
+					imported_cleanly = false
+					push_warning("Ignoring unknown completed customer request id from save: %s." % request_id)
+					continue
+
+				_append_unique_completed_request_id(request_id)
+		else:
+			imported_cleanly = false
 
 	return imported_cleanly
 
@@ -188,6 +225,12 @@ func _normalize_progress(value) -> Dictionary:
 	if value is Dictionary:
 		progress["current_stage"] = maxi(_to_int(value.get("current_stage", 0), 0), 0)
 		progress["visit_count"] = maxi(_to_int(value.get("visit_count", 0), 0), 0)
+		if int(progress["visit_count"]) >= 1:
+			progress["current_stage"] = maxi(int(progress["current_stage"]), 1)
+		if int(progress["visit_count"]) >= 2:
+			progress["current_stage"] = maxi(int(progress["current_stage"]), 2)
+		if int(progress["visit_count"]) >= 3:
+			progress["current_stage"] = maxi(int(progress["current_stage"]), 3)
 		progress["best_grade"] = _normalize_grade(str(value.get("best_grade", "")))
 		progress["last_grade"] = _normalize_grade(str(value.get("last_grade", "")))
 		progress["best_score"] = maxi(_to_int(value.get("best_score", 0), 0), 0)
@@ -220,6 +263,13 @@ func _append_unique_seen(story_id: String) -> void:
 	seen_customers.append(story_id)
 
 
+func _append_unique_completed_request_id(request_id: String) -> void:
+	if request_id.is_empty() or completed_customer_request_ids.has(request_id):
+		return
+
+	completed_customer_request_ids.append(request_id)
+
+
 func _is_known_story_id(story_id: String) -> bool:
 	if story_id.is_empty():
 		return false
@@ -232,6 +282,13 @@ func _is_known_story_id(story_id: String) -> bool:
 		return false
 
 	return true
+
+
+func _is_known_request_id(request_id: String) -> bool:
+	if request_id.is_empty():
+		return false
+
+	return not DataManager.get_customer_by_id(request_id).is_empty()
 
 
 func _to_int(value, default_value: int) -> int:

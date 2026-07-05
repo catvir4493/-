@@ -1,3 +1,23 @@
-{
-	"nights": []
-}
+[
+	{
+		"night": 1,
+		"customer_count": 5
+	},
+	{
+		"night": 2,
+		"customer_count": 6
+	},
+	{
+		"night": 3,
+		"customer_count": 7
+	},
+	{
+		"night": 4,
+		"customer_count": 8
+	},
+	{
+		"night": 5,
+		"customer_count": 4,
+		"final_customer_id": "previous_clerk_01"
+	}
+]
