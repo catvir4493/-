@@ -4,12 +4,15 @@ var _new_game_button: Button
 var _continue_button: Button
 var _archive_button: Button
 var _status_label: Label
+var _is_transitioning := false
 
 
 func _ready() -> void:
 	GameManager.go_to_main_menu(false)
 	_load_archive_progress_if_needed()
 	_build_ui()
+	if not GameManager.scene_change_failed.is_connected(_on_scene_change_failed):
+		GameManager.scene_change_failed.connect(_on_scene_change_failed)
 	_refresh_continue_button()
 
 
@@ -103,34 +106,52 @@ func _refresh_continue_button() -> void:
 
 
 func _on_new_game_pressed() -> void:
-	if _new_game_button.disabled:
+	if _new_game_button.disabled or _is_transitioning:
 		return
 
-	_new_game_button.disabled = true
-	_continue_button.disabled = true
-	_archive_button.disabled = true
+	_begin_transition()
 	GameManager.start_new_game()
 
 
 func _on_continue_pressed() -> void:
-	if _continue_button.disabled:
+	if _continue_button.disabled or _is_transitioning:
 		return
 
-	_continue_button.disabled = true
+	_begin_transition()
 	if not SaveManager.continue_game():
+		_is_transitioning = false
 		_status_label.text = "存档读取失败。"
 		_new_game_button.disabled = false
 		_archive_button.disabled = false
-		_refresh_continue_button()
+		_continue_button.disabled = not SaveManager.has_valid_save()
 
 
 func _on_archive_pressed() -> void:
-	if _archive_button.disabled:
+	if _archive_button.disabled or _is_transitioning:
 		return
 
-	_archive_button.disabled = true
+	_begin_transition()
 	GameManager.go_to_archive()
 
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+
+func _begin_transition() -> void:
+	_is_transitioning = true
+	_new_game_button.disabled = true
+	_continue_button.disabled = true
+	_archive_button.disabled = true
+	_status_label.text = ""
+
+
+func _on_scene_change_failed(_scene_path: String, message: String) -> void:
+	if not _is_transitioning:
+		return
+
+	_is_transitioning = false
+	_new_game_button.disabled = false
+	_archive_button.disabled = false
+	_continue_button.disabled = not SaveManager.has_valid_save()
+	_status_label.text = "场景切换失败：%s" % message

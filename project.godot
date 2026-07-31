@@ -26,6 +26,8 @@ ScoreSystem="*res://scripts/systems/ScoreSystem.gd"
 ComboSystem="*res://scripts/systems/ComboSystem.gd"
 NightStatsSystem="*res://scripts/systems/NightStatsSystem.gd"
 GameManager="*res://scripts/managers/GameManager.gd"
+PlaytestLogger="*res://scripts/debug/PlaytestLogger.gd"
+DebugManager="*res://scripts/managers/DebugManager.gd"
 
 [dotnet]
 

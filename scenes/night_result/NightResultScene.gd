@@ -53,6 +53,11 @@ func _build_ui() -> void:
 
 func _refresh() -> void:
 	var summary: Dictionary = NightStatsSystem.get_night_summary()
+	if not has_consistent_grade_total(summary):
+		push_warning(
+			"Night result grade totals do not match customers_served: %s." %
+			JSON.stringify(summary)
+		)
 	_title_label.text = "第 %d 夜结束" % int(summary.get("night_number", GameManager.current_night))
 	_summary_label.text = "\n".join([
 		"接待顾客数量：%d" % int(summary.get("customers_served", 0)),
@@ -67,6 +72,16 @@ func _refresh() -> void:
 		"触发组合总次数：%d" % int(summary.get("triggered_combo_count", 0)),
 		"本夜组合：%s" % _format_combo_names(summary.get("triggered_combo_names", []))
 	])
+
+
+func has_consistent_grade_total(summary: Dictionary) -> bool:
+	var grade_total := (
+		int(summary.get("perfect_count", 0))
+		+ int(summary.get("good_count", 0))
+		+ int(summary.get("normal_count", 0))
+		+ int(summary.get("fail_count", 0))
+	)
+	return grade_total == int(summary.get("customers_served", 0))
 
 
 func _format_combo_names(value) -> String:

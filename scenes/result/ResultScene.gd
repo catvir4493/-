@@ -55,28 +55,33 @@ func _refresh() -> void:
 
 	_title_label.text = "%s 已接待" % str(result.get("customer_name", "顾客"))
 	_summary_label.text = "\n".join([
-		"顾客：%s" % str(result.get("customer_name", "")),
-		"台词：%s" % str(result.get("customer_dialogue", "")),
-		"已选择商品：%s" % _format_array(result.get("selected_item_names", [])),
-		"score：%d" % int(result.get("score", 0)),
-		"grade：%s" % str(result.get("grade", "")),
-		"matched_tags：%s" % _format_array(result.get("matched_tags", [])),
-		"bad_tags：%s" % _format_array(result.get("bad_tags", [])),
-		"missing_tags：%s" % _format_array(result.get("missing_tags", [])),
-		"income：%d" % int(result.get("income", 0)),
-		"特殊组合：%s" % _format_combo_names(result),
-		"组合加分：+%d" % _get_combo_score_bonus(result),
-		"组合特殊文本：%s" % _format_combo_dialogues(result),
-		"反馈：%s" % str(result.get("customer_feedback", ""))
+		"顾客反馈：%s" % str(result.get("customer_feedback", "")),
+		"评价等级：%s" % str(result.get("grade", "")).capitalize(),
+		"分数：%d" % int(result.get("score", 0)),
+		"已选择商品：%s" % _format_array(result.get("selected_item_names", []), "无"),
+		"你理解到了：%s" % _format_array(
+			result.get("matched_tags", []),
+			"顾客的主要需求已经满足。"
+		),
+		"还缺少：%s" % _format_array(
+			result.get("missing_tags", []),
+			"顾客的主要需求已经满足。"
+		),
+		"产生了反效果：%s" % _format_array(
+			result.get("bad_tags", []),
+			"没有产生明显反效果。"
+		),
+		"发现特殊组合：%s" % _format_combo_names(result),
+		"本次收入：%d" % int(result.get("income", 0))
 	])
 
 
-func _format_array(value) -> String:
+func _format_array(value, empty_text: String = "无") -> String:
 	if not (value is Array):
-		return "无"
+		return empty_text
 
 	if value.is_empty():
-		return "无"
+		return empty_text
 
 	var result := ""
 	for entry in value:
@@ -95,7 +100,7 @@ func _format_combo_names(result: Dictionary) -> String:
 
 	var triggered_combos := _get_triggered_combos(result)
 	if triggered_combos.is_empty():
-		return "未触发特殊组合"
+		return "未触发特殊组合。"
 
 	var names: Array[String] = []
 	for combo in triggered_combos:
@@ -172,13 +177,19 @@ func _make_button(text: String) -> Button:
 
 
 func _on_continue_pressed() -> void:
+	continue_once()
+
+
+func continue_once(change_scene: bool = true) -> bool:
 	if _continue_button.disabled:
-		return
+		return false
 
 	_continue_button.disabled = true
 	var has_next_customer := CustomerSystem.move_to_next_customer()
 
 	if has_next_customer:
-		GameManager.continue_current_night()
+		GameManager.continue_current_night(change_scene)
 	else:
-		GameManager.go_to_night_result()
+		GameManager.go_to_night_result(change_scene)
+
+	return true
