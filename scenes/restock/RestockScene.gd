@@ -8,6 +8,7 @@ var _next_night_button: Button
 
 var _buy_buttons_by_item_id: Dictionary = {}
 var _stock_labels_by_item_id: Dictionary = {}
+var _purchase_in_progress := false
 
 
 func _ready() -> void:
@@ -191,7 +192,8 @@ func _get_unlocked_items() -> Array:
 
 func _should_disable_buy_button(item_id: String, buy_price: int) -> bool:
 	return (
-		InventorySystem.is_stock_full(item_id)
+		_purchase_in_progress
+		or InventorySystem.is_stock_full(item_id)
 		or buy_price > GameManager.money
 		or not InventorySystem.can_buy_item(item_id)
 	)
@@ -216,6 +218,11 @@ func _make_button(text: String) -> Button:
 
 
 func _on_buy_pressed(item_id: String) -> void:
+	if _purchase_in_progress:
+		return
+
+	_purchase_in_progress = true
+	_refresh_buy_states()
 	var result: Dictionary = InventorySystem.buy_item(item_id, 1)
 	if bool(result.get("success", false)):
 		_feedback_label.text = "已补货：%s" % _get_item_name(item_id)
@@ -224,16 +231,22 @@ func _on_buy_pressed(item_id: String) -> void:
 	else:
 		_feedback_label.text = _get_failure_message(str(result.get("reason", "")))
 
+	_purchase_in_progress = false
 	_refresh_header()
 	_refresh_buy_states()
 
 
 func _on_next_night_pressed() -> void:
+	start_next_night_once()
+
+
+func start_next_night_once(change_scene: bool = true) -> bool:
 	if _next_night_button.disabled:
-		return
+		return false
 
 	_next_night_button.disabled = true
-	GameManager.start_next_night()
+	GameManager.start_next_night(change_scene)
+	return true
 
 
 func _on_night_changed(_current_night: int) -> void:

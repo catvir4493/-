@@ -11,8 +11,11 @@ var _items_grid: GridContainer
 var _selected_label: Label
 var _feedback_label: Label
 var _clear_button: Button
+var _confirm_button: Button
 
-var _selected_item_ids: Array[String] = []
+var selected_items: Array[String] = []
+var _is_submitting := false
+var _scene_transitioning := false
 
 
 func _ready() -> void:
@@ -165,9 +168,9 @@ func _build_selection_panel() -> Control:
 	_clear_button.pressed.connect(_on_clear_pressed)
 	actions.add_child(_clear_button)
 
-	var confirm_button := _make_button("Confirm")
-	confirm_button.pressed.connect(_on_confirm_pressed)
-	actions.add_child(confirm_button)
+	_confirm_button = _make_button("Confirm")
+	_confirm_button.pressed.connect(_on_confirm_pressed)
+	actions.add_child(_confirm_button)
 
 	var menu_button := _make_button("返回主菜单")
 	menu_button.pressed.connect(_on_main_menu_pressed)
@@ -191,6 +194,9 @@ func _connect_signals() -> void:
 
 	if not CustomerSystem.current_customer_changed.is_connected(_on_current_customer_changed):
 		CustomerSystem.current_customer_changed.connect(_on_current_customer_changed)
+
+	if not GameManager.scene_change_started.is_connected(_on_scene_change_started):
+		GameManager.scene_change_started.connect(_on_scene_change_started)
 
 
 func _refresh() -> void:
@@ -225,7 +231,7 @@ func _refresh_item_cards() -> void:
 	for child in _items_grid.get_children():
 		child.queue_free()
 
-	var visible_items: Array = _get_unlocked_items()
+	var visible_items: Array = DataManager.get_all_items()
 	if visible_items.is_empty():
 		var empty_label := _make_label("货架暂时是空的。", 18)
 		_items_grid.add_child(empty_label)
@@ -249,18 +255,23 @@ func _refresh_item_cards() -> void:
 
 
 func _refresh_selection() -> void:
-	_clear_button.disabled = _selected_item_ids.is_empty()
+	_clear_button.disabled = selected_items.is_empty() or _is_submitting or _scene_transitioning
+	_confirm_button.disabled = not can_confirm_selection()
 
-	if _selected_item_ids.is_empty():
-		_selected_label.text = "已选择：无"
+	if selected_items.is_empty():
+		_selected_label.text = "已选择：0 / %d" % MAX_SELECTED_ITEMS
 		return
 
 	var names: Array[String] = []
-	for item_id in _selected_item_ids:
+	for item_id in selected_items:
 		var item: Dictionary = DataManager.get_item_by_id(item_id)
 		names.append(str(item.get("name", item_id)))
 
-	_selected_label.text = "已选择：%s" % _join_strings(names, "、")
+	_selected_label.text = "已选择：%d / %d\n%s" % [
+		selected_items.size(),
+		MAX_SELECTED_ITEMS,
+		_join_strings(names, "、")
+	]
 
 
 func _make_item_button(item: Dictionary, stock: int) -> Button:
@@ -268,17 +279,35 @@ func _make_item_button(item: Dictionary, stock: int) -> Button:
 	var item_name: String = str(item.get("name", item_id))
 	var description: String = str(item.get("description", ""))
 	var max_stock: int = int(item.get("max_stock", 0))
-	var is_selected: bool = _selected_item_ids.has(item_id)
+	var unlock_day := int(item.get("unlock_day", 1))
+	var is_unlocked := unlock_day <= GameManager.current_night
+	var is_selected: bool = selected_items.has(item_id)
+	var state_text := "可选择"
+	if not is_unlocked:
+		state_text = "尚未解锁（第 %d 夜）" % unlock_day
+	elif stock <= 0 and not is_selected:
+		state_text = "库存为 0"
+	elif is_selected:
+		state_text = "已选择"
+	elif selected_items.size() >= MAX_SELECTED_ITEMS:
+		state_text = "已达选择上限"
 
 	var button := Button.new()
 	button.toggle_mode = true
 	button.button_pressed = is_selected
-	button.disabled = stock <= 0 and not is_selected
-	button.text = "%s\n库存：%d/%d\n%s" % [item_name, stock, max_stock, description]
-	button.custom_minimum_size = Vector2(290, 112)
+	button.disabled = not is_unlocked or (stock <= 0 and not is_selected) or _is_submitting or _scene_transitioning
+	button.text = "%s · %s\n库存：%d/%d\n%s" % [item_name, state_text, stock, max_stock, description]
+	button.tooltip_text = description
+	button.custom_minimum_size = Vector2(290, 128)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if is_selected:
+		button.modulate = Color(1.0, 0.9, 0.55)
+	elif not is_unlocked or stock <= 0:
+		button.modulate = Color(0.55, 0.55, 0.58)
+	elif selected_items.size() >= MAX_SELECTED_ITEMS:
+		button.modulate = Color(0.72, 0.72, 0.76)
 	return button
 
 
@@ -297,20 +326,6 @@ func _make_button(text: String) -> Button:
 	button.text = text
 	button.custom_minimum_size = Vector2(150, 40)
 	return button
-
-
-func _get_unlocked_items() -> Array:
-	var unlocked_items: Array = []
-
-	for item in DataManager.get_all_items():
-		if not (item is Dictionary):
-			continue
-
-		var unlock_day: int = int(item.get("unlock_day", 1))
-		if unlock_day <= GameManager.current_night:
-			unlocked_items.append(item)
-
-	return unlocked_items
 
 
 func _has_stock_for_item_ids(item_ids: Array[String]) -> bool:
@@ -343,14 +358,17 @@ func _set_feedback(message: String) -> void:
 
 
 func _on_item_pressed(item_id: String) -> void:
-	if _selected_item_ids.has(item_id):
-		_selected_item_ids.erase(item_id)
+	if _is_submitting or _scene_transitioning:
+		return
+
+	if selected_items.has(item_id):
+		selected_items.erase(item_id)
 		_set_feedback("")
 		_refresh_item_cards()
 		_refresh_selection()
 		return
 
-	if _selected_item_ids.size() >= MAX_SELECTED_ITEMS:
+	if selected_items.size() >= MAX_SELECTED_ITEMS:
 		_set_feedback("最多只能选择 %d 件商品。" % MAX_SELECTED_ITEMS)
 		_refresh_item_cards()
 		return
@@ -360,47 +378,65 @@ func _on_item_pressed(item_id: String) -> void:
 		_refresh_item_cards()
 		return
 
-	_selected_item_ids.append(item_id)
+	var item := DataManager.get_item_by_id(item_id)
+	if item.is_empty() or int(item.get("unlock_day", 1)) > GameManager.current_night:
+		_set_feedback("这个商品尚未解锁。")
+		_refresh_item_cards()
+		return
+
+	selected_items.append(item_id)
 	_set_feedback("")
 	_refresh_item_cards()
 	_refresh_selection()
 
 
 func _on_confirm_pressed() -> void:
-	if _selected_item_ids.is_empty():
+	submit_selection()
+
+
+func submit_selection(change_scene: bool = true) -> bool:
+	if selected_items.is_empty():
 		_set_feedback("请至少选择 1 件商品。")
-		return
+		_refresh_selection()
+		return false
+
+	if _is_submitting or _scene_transitioning:
+		return false
 
 	var current_customer: Dictionary = CustomerSystem.get_current_customer()
 	if current_customer.is_empty():
 		_set_feedback("今晚已经没有顾客。")
-		return
+		return false
 
-	var selected_ids: Array[String] = _selected_item_ids.duplicate()
+	_is_submitting = true
+	_refresh_selection()
+	_refresh_item_cards()
+
+	var selected_ids: Array[String] = selected_items.duplicate()
 	var service_result: Dictionary = ScoreSystem.calculate_score(current_customer, selected_ids)
 	service_result["service_id"] = _make_service_id(current_customer)
 
 	if not _has_stock_for_item_ids(selected_ids):
+		_is_submitting = false
 		_set_feedback("库存不足，请重新选择商品。")
 		_refresh_item_cards()
 		_refresh_selection()
-		return
-
-	print("current_customer_id: ", str(current_customer.get("id", "")))
-	print("current_customer_required_tags: ", JSON.stringify(current_customer.get("required_tags", [])))
-	print("current_customer_avoid_tags: ", JSON.stringify(current_customer.get("avoid_tags", [])))
-	print("selected_item_ids: ", JSON.stringify(selected_ids))
-	print("score_result: ", JSON.stringify(service_result))
+		return false
 
 	NightStatsSystem.record_service_result(service_result)
 	CustomerProgressSystem.record_customer_result(current_customer, service_result)
 	GameManager.add_money(int(service_result.get("income", 0)))
 	InventorySystem.consume_items(selected_ids)
-	GameManager.show_result(service_result)
+	PlaytestLogger.log_service(service_result, current_customer)
+	GameManager.show_result(service_result, change_scene)
+	return true
 
 
 func _on_clear_pressed() -> void:
-	_selected_item_ids.clear()
+	if _is_submitting or _scene_transitioning:
+		return
+
+	selected_items.clear()
 	_set_feedback("")
 	_refresh_item_cards()
 	_refresh_selection()
@@ -432,13 +468,43 @@ func _on_inventory_changed(_item_id: String, _stock: int) -> void:
 
 
 func _on_inventory_reset() -> void:
-	_selected_item_ids.clear()
+	selected_items.clear()
 	_refresh()
 
 
 func _on_current_customer_changed(_customer: Dictionary, _customer_index: int) -> void:
-	_selected_item_ids.clear()
+	selected_items.clear()
+	_is_submitting = false
 	_set_feedback("")
 	_refresh_customer()
 	_refresh_item_cards()
 	_refresh_selection()
+
+
+func can_confirm_selection() -> bool:
+	return (
+		not selected_items.is_empty()
+		and not _is_submitting
+		and not _scene_transitioning
+		and CustomerSystem.has_more_customers()
+	)
+
+
+func get_selected_item_ids() -> Array[String]:
+	return selected_items.duplicate()
+
+
+func clear_selection() -> void:
+	selected_items.clear()
+	if _feedback_label != null:
+		_set_feedback("")
+	if _items_grid != null:
+		_refresh_item_cards()
+	if _selected_label != null:
+		_refresh_selection()
+
+
+func _on_scene_change_started(_scene_path: String) -> void:
+	_scene_transitioning = true
+	if _confirm_button != null:
+		_refresh_selection()

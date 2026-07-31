@@ -87,7 +87,7 @@ func get_current_customer() -> Dictionary:
 
 
 func move_to_next_customer() -> bool:
-	if current_customer_queue.is_empty():
+	if current_customer_queue.is_empty() or not has_more_customers():
 		return false
 
 	current_customer_index += 1

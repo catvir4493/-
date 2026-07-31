@@ -4,6 +4,7 @@ var _profile_list: VBoxContainer
 var _detail_title_label: Label
 var _detail_body_label: Label
 var _selected_profile_id := ""
+var _back_button: Button
 
 
 func _ready() -> void:
@@ -52,9 +53,9 @@ func _build_ui() -> void:
 	body.add_child(_build_profile_list_panel())
 	body.add_child(_build_detail_panel())
 
-	var back_button := _make_button("Back")
-	back_button.pressed.connect(_on_back_pressed)
-	layout.add_child(back_button)
+	_back_button = _make_button("Back")
+	_back_button.pressed.connect(_on_back_pressed)
+	layout.add_child(_back_button)
 
 
 func _build_profile_list_panel() -> Control:
@@ -102,11 +103,16 @@ func _build_detail_panel() -> Control:
 	_detail_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	layout.add_child(_detail_title_label)
 
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(scroll)
+
 	_detail_body_label = _make_label("", 18)
 	_detail_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_detail_body_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_detail_body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(_detail_body_label)
+	scroll.add_child(_detail_body_label)
 
 	return panel
 
@@ -253,6 +259,10 @@ func _make_button(text: String) -> Button:
 
 
 func _on_back_pressed() -> void:
+	if _back_button.disabled:
+		return
+
+	_back_button.disabled = true
 	GameManager.go_to_main_menu()
 
 
