@@ -1,4 +1,8 @@
-extends Control
+extends "res://scripts/ui/BaseScreen.gd"
+
+const ScreenBackgroundScene = preload("res://scenes/ui/components/ScreenBackground.tscn")
+const PrimaryButtonScene = preload("res://scenes/ui/components/PrimaryButton.tscn")
+const RestockItemCardScene = preload("res://scenes/ui/components/RestockItemCard.tscn")
 
 var _night_label: Label
 var _money_label: Label
@@ -12,15 +16,15 @@ var _purchase_in_progress := false
 
 
 func _ready() -> void:
+	super._ready()
 	_build_ui()
 	_connect_signals()
 	_refresh()
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.06, 0.08, 0.09)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var background: Control = ScreenBackgroundScene.instantiate()
+	background.set_background("restock_default")
 	add_child(background)
 
 	var margin := MarginContainer.new()
@@ -124,54 +128,17 @@ func _refresh_buy_states() -> void:
 
 func _make_item_row(item: Dictionary) -> Control:
 	var item_id := str(item.get("id", ""))
-	var item_name := str(item.get("name", item_id))
-	var description := str(item.get("description", ""))
 	var buy_price := int(item.get("buy_price", 0))
 	var stock := InventorySystem.get_stock(item_id)
 	var max_stock := InventorySystem.get_max_stock(item_id)
 
-	var panel := PanelContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	panel.add_child(margin)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	margin.add_child(row)
-
-	var text_column := VBoxContainer.new()
-	text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_column.add_theme_constant_override("separation", 6)
-	row.add_child(text_column)
-
-	var name_label := _make_label(item_name, 22)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	text_column.add_child(name_label)
-
-	var description_label := _make_label(description, 15)
-	description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	text_column.add_child(description_label)
-
-	var stock_label := _make_label("库存：%d / %d" % [stock, max_stock], 15)
-	stock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	text_column.add_child(stock_label)
+	var panel: Control = RestockItemCardScene.instantiate()
+	panel.setup(item, stock, max_stock)
+	panel.set_buy_enabled(not _should_disable_buy_button(item_id, buy_price))
+	panel.buy_pressed.connect(_on_buy_pressed)
+	var stock_label: Label = panel.get_stock_label()
 	_stock_labels_by_item_id[item_id] = stock_label
-
-	var price_label := _make_label("进货价：%d" % buy_price, 15)
-	price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	text_column.add_child(price_label)
-
-	var buy_button := _make_button("Buy")
-	buy_button.disabled = _should_disable_buy_button(item_id, buy_price)
-	buy_button.pressed.connect(func() -> void:
-		_on_buy_pressed(item_id)
-	)
-	row.add_child(buy_button)
+	var buy_button: Button = panel.get_buy_button()
 	_buy_buttons_by_item_id[item_id] = buy_button
 
 	return panel
@@ -210,8 +177,8 @@ func _make_label(text: String, font_size: int) -> Label:
 
 
 func _make_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button: Button = PrimaryButtonScene.instantiate()
+	button.set_text(text)
 	button.custom_minimum_size = Vector2(180, 40)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	return button
@@ -230,6 +197,7 @@ func _on_buy_pressed(item_id: String) -> void:
 			push_warning("Failed to save restock checkpoint after purchase.")
 	else:
 		_feedback_label.text = _get_failure_message(str(result.get("reason", "")))
+		show_message(_feedback_label.text)
 
 	_purchase_in_progress = false
 	_refresh_header()

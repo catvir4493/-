@@ -75,8 +75,8 @@ func _bind_autoloads() -> void:
 
 
 func _test_data_manager() -> void:
-	_assert_equal(DataManager.get_all_chapters().size(), 1, "DataManager must load chapters.json.")
-	_assert_equal(DataManager.get_all_story_events().size(), 3, "DataManager must load story_events.json.")
+	_assert_equal(DataManager.get_all_chapters().size(), 2, "DataManager must load both chapter records.")
+	_assert_equal(DataManager.get_all_story_events().size(), 7, "DataManager must load Chapter 1 and Chapter 2 story events.")
 	_assert_equal(DataManager.get_all_endings().size(), 1, "DataManager must load endings.json.")
 	_assert_equal(DataManager.get_chapter_by_id("chapter_01").get("id", ""), "chapter_01", "Chapter lookup must work.")
 	_assert_equal(DataManager.get_story_event_by_id("event_previous_clerk_final").get("id", ""), "event_previous_clerk_final", "Story event lookup must work.")

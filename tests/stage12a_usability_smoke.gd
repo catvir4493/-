@@ -96,6 +96,7 @@ func _test_shop_selection_states() -> void:
 	var shop = load(SHOP_SCENE_PATH).instantiate()
 	root.add_child(shop)
 	await process_frame
+	await _unlock_shop_dialogue(shop)
 
 	_assert_equal(shop.get_selected_item_ids(), [], "selected_items must start empty.")
 	_assert(not shop.can_confirm_selection(), "Confirm must be unavailable with no selected item.")
@@ -130,6 +131,7 @@ func _test_confirm_only_once() -> void:
 	var shop = load(SHOP_SCENE_PATH).instantiate()
 	root.add_child(shop)
 	await process_frame
+	await _unlock_shop_dialogue(shop)
 
 	var item_id: String = _get_unlocked_item_ids(1)[0]
 	var stock_before = _inventory_system.get_stock(item_id)
@@ -157,6 +159,9 @@ func _test_continue_only_once() -> void:
 	var result_scene = load(RESULT_SCENE_PATH).instantiate()
 	root.add_child(result_scene)
 	await process_frame
+	var dialogue_panel = result_scene.get_dialogue_panel()
+	dialogue_panel.reveal_all()
+	await process_frame
 
 	var first_continue = result_scene.continue_once(false)
 	var index_after_first = _customer_system.current_customer_index
@@ -167,6 +172,19 @@ func _test_continue_only_once() -> void:
 	_assert_equal(_customer_system.current_customer_index, index_after_first, "Second Continue must not advance again.")
 
 	result_scene.queue_free()
+	await process_frame
+
+
+func _unlock_shop_dialogue(shop: Control) -> void:
+	var guard := 0
+	while shop.has_active_narrative_intro() and guard < 4:
+		shop.skip_narrative_intro()
+		guard += 1
+		await process_frame
+	var dialogue_panel = shop.get_dialogue_panel()
+	dialogue_panel.reveal_all()
+	await process_frame
+	dialogue_panel.request_advance()
 	await process_frame
 
 

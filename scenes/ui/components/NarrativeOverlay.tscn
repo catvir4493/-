@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/components/NarrativeOverlay.gd" id="1"]
+
+[node name="NarrativeOverlay" type="PanelContainer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+focus_mode = 2
+script = ExtResource("1")
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Content" type="VBoxContainer" parent="Center"]
+custom_minimum_size = Vector2(560, 160)
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="Center/Content"]
+layout_mode = 2
+text = "第 1 夜"
+horizontal_alignment = 1
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 40
+mouse_filter = 2
+
+[node name="BodyText" type="RichTextLabel" parent="Center/Content"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+bbcode_enabled = false
+fit_content = true
+scroll_active = false
+autowrap_mode = 2
+mouse_filter = 2
+
+[node name="HintLabel" type="Label" parent="Center/Content"]
+layout_mode = 2
+text = "点击跳过"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+mouse_filter = 2

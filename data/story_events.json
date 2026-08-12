@@ -32,5 +32,37 @@
 		"title": "第一章结束",
 		"text": "五个夜晚过去了，便利店仍然没有在地图上出现。",
 		"one_time": true
+	},
+	{
+		"id": "event_ch2_begin",
+		"type": "chapter_start",
+		"trigger": {"chapter_id": "chapter_02", "night": 6},
+		"title": "第二章开始",
+		"text": "有些客人带来的话，在开口之前已经放了很多年。",
+		"one_time": true
+	},
+	{
+		"id": "event_nurse_resignation",
+		"type": "special_customer",
+		"trigger": {"story_id": "night_nurse_story", "story_stage": 3, "night": 10},
+		"title": "辞职申请",
+		"text": "她终于做了决定，但做出决定并没有立刻让犹豫消失。",
+		"one_time": true
+	},
+	{
+		"id": "event_breakfast_apology",
+		"type": "special_customer",
+		"trigger": {"story_id": "divorced_father_story", "story_stage": 3, "night": 10},
+		"title": "迟到的道歉",
+		"text": "他还不知道道歉是否有用，但第一次没有把这句话吞回去。",
+		"one_time": true
+	},
+	{
+		"id": "event_ch2_complete",
+		"type": "chapter_complete",
+		"trigger": {"chapter_id": "chapter_02", "night": 10},
+		"title": "第二章结束",
+		"text": "话没有解决所有问题。天亮以后，他们仍要带着说过和没说过的部分继续生活。",
+		"one_time": true
 	}
 ]

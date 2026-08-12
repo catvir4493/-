@@ -8,7 +8,7 @@
 
 ## 新顾客请求与档案
 
-请求写入 `data/customers.json`，档案写入 `data/customer_profiles.json`。同一故事线复用稳定的 `story_id`；每个 `story_id + story_stage` 必须唯一，阶段按 1、2、3 顺序推进。`min_visit_count` 应与前置到访次数一致，`min_night` 不得晚于排期夜晚；一次性请求使用 `one_time: true`。真实档案是否可见由 `ContentUnlockSystem.is_profile_visible()` 判断。
+请求写入 `data/customers.json`，档案写入 `data/customer_profiles.json`。同一故事线复用稳定的 `story_id`；每个 `story_id + story_stage` 必须唯一，阶段从 1 开始顺序推进，不设置固定最大阶段。`customer_profiles.json` 必须为该故事线每个已存在的请求阶段提供对应 `archive_stages` 文本。`min_visit_count` 应与前置到访次数一致，`min_night` 不得晚于排期夜晚；一次性请求使用 `one_time: true`。真实档案是否可见由 `ContentUnlockSystem.is_profile_visible()` 判断。
 
 不要在 `CustomerSystem` 之外硬编码故事阶段推进、一次性完成记录或跳阶段规则。新增故事线时同时添加唯一档案，并运行内容校验确认请求与档案互相引用。
 

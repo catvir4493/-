@@ -9,5 +9,16 @@
 		"final_story_id": "previous_clerk_story",
 		"final_story_stage": 3,
 		"is_mvp_chapter": true
+	},
+	{
+		"id": "chapter_02",
+		"name": "第二章：那些没说出口的话",
+		"description": "围绕没说出口的道歉、告别和决定，完成第六至第十夜营业。",
+		"start_night": 6,
+		"end_night": 10,
+		"required_nights": [6, 7, 8, 9, 10],
+		"final_story_id": "previous_clerk_story",
+		"final_story_stage": 5,
+		"is_mvp_chapter": false
 	}
 ]

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="48" fill="#252c3d"/>
+  <circle cx="128" cy="112" r="62" fill="none" stroke="#aebbd4" stroke-width="18"/>
+  <text x="128" y="226" fill="#d5dcea" font-family="sans-serif" font-size="44" text-anchor="middle">UI</text>
+</svg>

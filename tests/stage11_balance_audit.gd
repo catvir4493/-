@@ -101,6 +101,8 @@ func _build_indexes() -> void:
 	for item in _data_manager.get_all_items():
 		if not (item is Dictionary):
 			continue
+		if _to_int(item.get("unlock_day", 99), 99) > 5:
+			continue
 
 		var item_id := str(item.get("id", ""))
 		if item_id.is_empty():
@@ -125,6 +127,8 @@ func _build_indexes() -> void:
 	for customer in _data_manager.get_all_customers():
 		if not (customer is Dictionary):
 			continue
+		if _to_int(customer.get("min_night", 99), 99) > 5:
+			continue
 
 		var request_id := str(customer.get("id", ""))
 		if not request_id.is_empty():
@@ -132,6 +136,14 @@ func _build_indexes() -> void:
 
 	for combo in _data_manager.get_all_combos():
 		if not (combo is Dictionary):
+			continue
+		var chapter_one_combo := true
+		for required_item_id in _get_combo_required_items(combo):
+			var required_item: Dictionary = _data_manager.get_item_by_id(required_item_id)
+			if required_item.is_empty() or _to_int(required_item.get("unlock_day", 99), 99) > 5:
+				chapter_one_combo = false
+				break
+		if not chapter_one_combo:
 			continue
 
 		var combo_id := _get_combo_id(combo)

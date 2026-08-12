@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="56" fill="#202535"/>
+  <rect x="128" y="96" width="256" height="280" rx="28" fill="#66718a"/>
+  <path d="M160 160h192M160 220h192M160 280h128" stroke="#b8c1d5" stroke-width="20" stroke-linecap="round"/>
+  <text x="256" y="456" fill="#d3d9e6" font-family="sans-serif" font-size="52" text-anchor="middle">ITEM</text>
+</svg>

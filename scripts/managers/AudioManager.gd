@@ -40,6 +40,16 @@ func play_bgm(stream: AudioStream, fade_duration: float = 0.0) -> void:
 		_bgm_tween.tween_property(_bgm_player, "volume_db", 0.0, maxf(fade_duration, 0.0))
 
 
+func play_bgm_by_id(bgm_id: String, fade_duration: float = 0.0) -> void:
+	if bgm_id.is_empty():
+		return
+	var stream := AssetRegistry.get_audio("bgm", bgm_id)
+	if stream == null:
+		return
+	play_bgm(stream, fade_duration)
+	current_bgm_id = bgm_id
+
+
 func stop_bgm(fade_duration: float = 0.0) -> void:
 	if not _bgm_player.playing:
 		return
@@ -71,6 +81,14 @@ func play_sfx(stream: AudioStream) -> void:
 	var player := _find_available_sfx_player()
 	player.stream = stream
 	player.play()
+
+
+func play_sfx_by_id(sfx_id: String) -> void:
+	if sfx_id.is_empty():
+		return
+	var stream := AssetRegistry.get_audio("sfx", sfx_id)
+	if stream != null:
+		play_sfx(stream)
 
 
 func stop_all_sfx() -> void:

@@ -3,6 +3,7 @@ extends Node
 signal story_event_triggered(event_data: Dictionary)
 
 var triggered_event_ids: Array[String] = []
+var _last_triggered_events: Array[Dictionary] = []
 
 
 func get_triggered_event_ids() -> Array:
@@ -11,6 +12,10 @@ func get_triggered_event_ids() -> Array:
 
 func has_triggered_event(event_id: String) -> bool:
 	return triggered_event_ids.has(event_id)
+
+
+func get_last_triggered_events() -> Array:
+	return _last_triggered_events.duplicate(true)
 
 
 func mark_event_triggered(event_id: String) -> bool:
@@ -26,6 +31,7 @@ func mark_event_triggered(event_id: String) -> bool:
 
 func get_available_events(context: Dictionary) -> Array:
 	var available := []
+	_last_triggered_events.clear()
 	for event in DataManager.get_all_story_events():
 		if not (event is Dictionary) or not _matches_context(event, context):
 			continue
@@ -35,6 +41,7 @@ func get_available_events(context: Dictionary) -> Array:
 			continue
 
 		available.append(event.duplicate(true))
+		_last_triggered_events.append(event.duplicate(true))
 		if bool(event.get("one_time", false)):
 			mark_event_triggered(event_id)
 
@@ -46,6 +53,7 @@ func get_available_events(context: Dictionary) -> Array:
 
 func reset_events() -> void:
 	triggered_event_ids.clear()
+	_last_triggered_events.clear()
 
 
 func export_event_data() -> Dictionary:
@@ -54,6 +62,7 @@ func export_event_data() -> Dictionary:
 
 func import_event_data(data: Dictionary) -> bool:
 	triggered_event_ids.clear()
+	_last_triggered_events.clear()
 	var values = data.get("triggered_story_events", data.get("triggered_event_ids", []))
 	if not (values is Array):
 		return false

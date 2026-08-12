@@ -17,6 +17,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+AssetRegistry="*res://scripts/managers/AssetRegistry.gd"
+UIThemeManager="*res://scripts/managers/UIThemeManager.gd"
 SettingsManager="*res://scripts/managers/SettingsManager.gd"
 AudioManager="*res://scripts/managers/AudioManager.gd"
 SceneTransitionManager="*res://scripts/managers/SceneTransitionManager.gd"

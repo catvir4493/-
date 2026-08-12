@@ -1,34 +1,46 @@
-extends Control
+extends "res://scripts/ui/BaseScreen.gd"
 
 const MAX_SELECTED_ITEMS := 3
+const ItemCardScene = preload("res://scenes/ui/components/ItemCard.tscn")
+const CustomerHeaderScene = preload("res://scenes/ui/components/CustomerHeader.tscn")
+const DialoguePanelScene = preload("res://scenes/ui/components/DialoguePanel.tscn")
+const ChapterCardScene = preload("res://scenes/ui/components/ChapterCard.tscn")
+const NarrativeOverlayScene = preload("res://scenes/ui/components/NarrativeOverlay.tscn")
+const ScreenBackgroundScene = preload("res://scenes/ui/components/ScreenBackground.tscn")
+const PrimaryButtonScene = preload("res://scenes/ui/components/PrimaryButton.tscn")
 
 var _night_label: Label
 var _money_label: Label
 var _customer_progress_label: Label
-var _customer_name_label: Label
-var _customer_dialogue_label: Label
+var _customer_header: Control
+var _dialogue_panel: Control
 var _items_grid: GridContainer
 var _selected_label: Label
 var _feedback_label: Label
 var _clear_button: Button
 var _confirm_button: Button
+var _chapter_card: Control
+var _narrative_overlay: Control
 
 var selected_items: Array[String] = []
 var _is_submitting := false
 var _scene_transitioning := false
+var _dialogue_interaction_ready := false
+var _intro_active := true
 
 
 func _ready() -> void:
+	super._ready()
 	CustomerSystem.ensure_night_queue(GameManager.current_night)
 	_build_ui()
 	_connect_signals()
 	_refresh()
+	call_deferred("_begin_customer_presentation")
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.08, 0.09, 0.12)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var background: Control = ScreenBackgroundScene.instantiate()
+	background.set_background("shop_default")
 	add_child(background)
 
 	var margin := MarginContainer.new()
@@ -66,10 +78,15 @@ func _build_ui() -> void:
 	main_area.add_child(_build_shelf_panel())
 	layout.add_child(_build_selection_panel())
 
+	_narrative_overlay = NarrativeOverlayScene.instantiate()
+	add_child(_narrative_overlay)
+	_chapter_card = ChapterCardScene.instantiate()
+	add_child(_chapter_card)
+
 
 func _build_customer_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(360, 0)
+	panel.custom_minimum_size = Vector2(420, 0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
@@ -88,13 +105,21 @@ func _build_customer_panel() -> Control:
 	_customer_progress_label = _make_label("", 16)
 	layout.add_child(_customer_progress_label)
 
-	_customer_name_label = _make_label("", 28)
-	layout.add_child(_customer_name_label)
+	var customer_content := HBoxContainer.new()
+	customer_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	customer_content.add_theme_constant_override("separation", 12)
+	layout.add_child(customer_content)
 
-	_customer_dialogue_label = _make_label("", 18)
-	_customer_dialogue_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_customer_dialogue_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(_customer_dialogue_label)
+	_customer_header = CustomerHeaderScene.instantiate()
+	_customer_header.custom_minimum_size = Vector2(200, 0)
+	_customer_header.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_customer_header.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	customer_content.add_child(_customer_header)
+
+	_dialogue_panel = DialoguePanelScene.instantiate()
+	_dialogue_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_dialogue_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	customer_content.add_child(_dialogue_panel)
 
 	return panel
 
@@ -198,6 +223,9 @@ func _connect_signals() -> void:
 	if not GameManager.scene_change_started.is_connected(_on_scene_change_started):
 		GameManager.scene_change_started.connect(_on_scene_change_started)
 
+	if not _dialogue_panel.continue_requested.is_connected(_on_dialogue_continue_requested):
+		_dialogue_panel.continue_requested.connect(_on_dialogue_continue_requested)
+
 
 func _refresh() -> void:
 	_refresh_header()
@@ -214,17 +242,23 @@ func _refresh_header() -> void:
 func _refresh_customer() -> void:
 	var customer: Dictionary = CustomerSystem.get_current_customer()
 	if customer.is_empty():
+		_dialogue_interaction_ready = false
 		_customer_progress_label.text = "今晚已无顾客"
-		_customer_name_label.text = "打烊前的安静"
-		_customer_dialogue_label.text = "今晚的队列已经结束。"
+		_customer_header.show_empty_state("打烊前的安静", "今晚的队列已经结束。")
+		_dialogue_panel.clear_dialogue()
 		return
 
 	_customer_progress_label.text = "顾客 %d / %d" % [
 		CustomerSystem.get_current_customer_number(),
 		CustomerSystem.get_customer_count_for_current_night()
 	]
-	_customer_name_label.text = str(customer.get("customer_name", "陌生顾客"))
-	_customer_dialogue_label.text = str(customer.get("dialogue", "……"))
+	var profile := DataManager.get_customer_profile_by_story_id(str(customer.get("story_id", "")))
+	_customer_header.setup(customer, profile)
+	_dialogue_interaction_ready = false
+	if _intro_active:
+		_dialogue_panel.clear_dialogue()
+	else:
+		_show_customer_dialogue(customer)
 
 
 func _refresh_item_cards() -> void:
@@ -247,15 +281,12 @@ func _refresh_item_cards() -> void:
 
 		var stock: int = InventorySystem.get_stock(item_id)
 		var button := _make_item_button(item, stock)
-		var captured_id: String = item_id
-		button.pressed.connect(func() -> void:
-			_on_item_pressed(captured_id)
-		)
+		button.item_pressed.connect(_on_item_pressed)
 		_items_grid.add_child(button)
 
 
 func _refresh_selection() -> void:
-	_clear_button.disabled = selected_items.is_empty() or _is_submitting or _scene_transitioning
+	_clear_button.disabled = selected_items.is_empty() or _is_submitting or _scene_transitioning or not _dialogue_interaction_ready
 	_confirm_button.disabled = not can_confirm_selection()
 
 	if selected_items.is_empty():
@@ -276,9 +307,7 @@ func _refresh_selection() -> void:
 
 func _make_item_button(item: Dictionary, stock: int) -> Button:
 	var item_id: String = str(item.get("id", ""))
-	var item_name: String = str(item.get("name", item_id))
 	var description: String = str(item.get("description", ""))
-	var max_stock: int = int(item.get("max_stock", 0))
 	var unlock_day := int(item.get("unlock_day", 1))
 	var is_unlocked := ContentUnlockSystem.is_item_unlocked(item_id)
 	var is_selected: bool = selected_items.has(item_id)
@@ -292,22 +321,25 @@ func _make_item_button(item: Dictionary, stock: int) -> Button:
 	elif selected_items.size() >= MAX_SELECTED_ITEMS:
 		state_text = "已达选择上限"
 
-	var button := Button.new()
+	var button: Button = ItemCardScene.instantiate()
+	button.setup(item, stock)
 	button.toggle_mode = true
-	button.button_pressed = is_selected
-	button.disabled = not is_unlocked or (stock <= 0 and not is_selected) or _is_submitting or _scene_transitioning
-	button.text = "%s · %s\n库存：%d/%d\n%s" % [item_name, state_text, stock, max_stock, description]
+	button.set_state_text(state_text, item, stock)
 	button.tooltip_text = description
 	button.custom_minimum_size = Vector2(290, 128)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if is_selected:
-		button.modulate = Color(1.0, 0.9, 0.55)
-	elif not is_unlocked or stock <= 0:
-		button.modulate = Color(0.55, 0.55, 0.58)
-	elif selected_items.size() >= MAX_SELECTED_ITEMS:
-		button.modulate = Color(0.72, 0.72, 0.76)
+	if not _dialogue_interaction_ready or _is_submitting or _scene_transitioning or (selected_items.size() >= MAX_SELECTED_ITEMS and not is_selected):
+		button.set_state(ItemCard.CardState.DISABLED)
+	elif not is_unlocked:
+		button.set_state(ItemCard.CardState.LOCKED)
+	elif stock <= 0 and not is_selected:
+		button.set_state(ItemCard.CardState.OUT_OF_STOCK)
+	elif is_selected:
+		button.set_state(ItemCard.CardState.SELECTED)
+	else:
+		button.set_state(ItemCard.CardState.AVAILABLE)
 	return button
 
 
@@ -322,8 +354,8 @@ func _make_label(text: String, font_size: int) -> Label:
 
 
 func _make_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button: Button = PrimaryButtonScene.instantiate()
+	button.set_text(text)
 	button.custom_minimum_size = Vector2(150, 40)
 	return button
 
@@ -355,10 +387,12 @@ func _join_strings(values: Array, separator: String) -> String:
 
 func _set_feedback(message: String) -> void:
 	_feedback_label.text = message
+	if not message.is_empty():
+		show_message(message)
 
 
 func _on_item_pressed(item_id: String) -> void:
-	if _is_submitting or _scene_transitioning:
+	if not _dialogue_interaction_ready or _is_submitting or _scene_transitioning:
 		return
 
 	if selected_items.has(item_id):
@@ -395,6 +429,10 @@ func _on_confirm_pressed() -> void:
 
 
 func submit_selection(change_scene: bool = true) -> bool:
+	if not _dialogue_interaction_ready:
+		_set_feedback("请先读完顾客的话。")
+		return false
+
 	if selected_items.is_empty():
 		_set_feedback("请至少选择 1 件商品。")
 		_refresh_selection()
@@ -439,7 +477,7 @@ func submit_selection(change_scene: bool = true) -> bool:
 
 
 func _on_clear_pressed() -> void:
-	if _is_submitting or _scene_transitioning:
+	if not _dialogue_interaction_ready or _is_submitting or _scene_transitioning:
 		return
 
 	selected_items.clear()
@@ -481,6 +519,8 @@ func _on_inventory_reset() -> void:
 func _on_current_customer_changed(_customer: Dictionary, _customer_index: int) -> void:
 	selected_items.clear()
 	_is_submitting = false
+	_intro_active = false
+	_dialogue_interaction_ready = false
 	_set_feedback("")
 	_refresh_customer()
 	_refresh_item_cards()
@@ -490,6 +530,7 @@ func _on_current_customer_changed(_customer: Dictionary, _customer_index: int) -
 func can_confirm_selection() -> bool:
 	return (
 		not selected_items.is_empty()
+		and _dialogue_interaction_ready
 		and not _is_submitting
 		and not _scene_transitioning
 		and CustomerSystem.has_more_customers()
@@ -514,3 +555,99 @@ func _on_scene_change_started(_scene_path: String) -> void:
 	_scene_transitioning = true
 	if _confirm_button != null:
 		_refresh_selection()
+
+
+func _begin_customer_presentation() -> void:
+	var customer: Dictionary = CustomerSystem.get_current_customer()
+	if customer.is_empty():
+		_intro_active = false
+		return
+
+	if CustomerSystem.get_current_customer_number() == 1:
+		_narrative_overlay.show_text(get_night_transition_text(), "", 1.0)
+		await _narrative_overlay.dismissed
+		if not is_inside_tree():
+			return
+
+	var chapter_event := _get_new_chapter_start_event()
+	if not chapter_event.is_empty():
+		var chapter := ChapterSystem.get_chapter_for_night(GameManager.current_night)
+		var title_parts := _split_chapter_name(str(chapter.get("name", "")))
+		_chapter_card.show_chapter(title_parts[0], title_parts[1], "start")
+		await _chapter_card.dismissed
+		if not is_inside_tree():
+			return
+
+	_intro_active = false
+	_show_customer_dialogue(customer)
+	_refresh_item_cards()
+	_refresh_selection()
+
+
+func _show_customer_dialogue(customer: Dictionary) -> void:
+	_dialogue_interaction_ready = false
+	_dialogue_panel.show_dialogue(
+		str(customer.get("customer_name", "顾客")),
+		str(customer.get("dialogue", "…"))
+	)
+
+
+func _on_dialogue_continue_requested() -> void:
+	_dialogue_interaction_ready = true
+	_refresh_item_cards()
+	_refresh_selection()
+
+
+func _get_new_chapter_start_event() -> Dictionary:
+	for event in StoryEventSystem.get_last_triggered_events():
+		if not (event is Dictionary) or str(event.get("type", "")) != "chapter_start":
+			continue
+		var trigger = event.get("trigger", {})
+		if trigger is Dictionary and int(trigger.get("night", 0)) == GameManager.current_night:
+			return event.duplicate(true)
+	return {}
+
+
+func _split_chapter_name(chapter_name: String) -> Array[String]:
+	var result: Array[String] = [chapter_name, ""]
+	var parts := chapter_name.split("：", true, 1)
+	if parts.size() > 1:
+		result[0] = parts[0]
+		result[1] = parts[1]
+	return result
+
+
+func get_dialogue_panel() -> Control:
+	return _dialogue_panel
+
+
+func is_dialogue_interaction_ready() -> bool:
+	return _dialogue_interaction_ready
+
+
+func has_active_narrative_intro() -> bool:
+	return _intro_active
+
+
+func skip_narrative_intro() -> bool:
+	if _narrative_overlay != null and _narrative_overlay.is_open():
+		return _narrative_overlay.close()
+	if _chapter_card != null and _chapter_card.visible:
+		return _chapter_card.dismiss()
+	return false
+
+
+func get_night_transition_text() -> String:
+	return "第 %d 夜" % GameManager.current_night
+
+
+func get_chapter_presentation_for_night(night_number: int) -> Dictionary:
+	var chapter := ChapterSystem.get_chapter_for_night(night_number)
+	if chapter.is_empty() or int(chapter.get("start_night", 0)) != night_number:
+		return {}
+	var title_parts := _split_chapter_name(str(chapter.get("name", "")))
+	return {
+		"chapter_id": str(chapter.get("id", "")),
+		"title": title_parts[0],
+		"subtitle": title_parts[1]
+	}

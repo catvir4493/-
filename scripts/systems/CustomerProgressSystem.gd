@@ -69,11 +69,6 @@ func record_customer_result(customer_data: Dictionary, service_result: Dictionar
 		progress["best_grade"] = grade
 
 	var current_stage := maxi(_to_int(progress.get("current_stage", 0), 0), 0)
-	current_stage = maxi(current_stage, 1)
-	if int(progress["visit_count"]) >= 2:
-		current_stage = maxi(current_stage, 2)
-	if int(progress["visit_count"]) >= 3:
-		current_stage = maxi(current_stage, 3)
 	current_stage = maxi(current_stage, request_stage)
 	progress["current_stage"] = current_stage
 

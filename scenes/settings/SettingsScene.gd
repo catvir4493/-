@@ -1,9 +1,13 @@
-extends Control
+extends "res://scripts/ui/BaseScreen.gd"
+
+const ScreenBackgroundScene = preload("res://scenes/ui/components/ScreenBackground.tscn")
+const PrimaryButtonScene = preload("res://scenes/ui/components/PrimaryButton.tscn")
 
 var _master_slider: HSlider
 var _bgm_slider: HSlider
 var _sfx_slider: HSlider
 var _text_speed_slider: HSlider
+var _text_speed_value_label: Label
 var _fullscreen_checkbox: CheckBox
 var _screen_shake_checkbox: CheckBox
 var _status_label: Label
@@ -12,14 +16,14 @@ var _refreshing := false
 
 
 func _ready() -> void:
+	super._ready()
 	_build_ui()
 	_refresh_controls()
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.06, 0.07, 0.1)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var background: Control = ScreenBackgroundScene.instantiate()
+	background.set_background("settings_default")
 	add_child(background)
 
 	var center := CenterContainer.new()
@@ -48,6 +52,9 @@ func _build_ui() -> void:
 	_bgm_slider = _add_slider_row(layout, "BGM Volume", 0.0, 1.0, 0.01, _on_bgm_volume_changed)
 	_sfx_slider = _add_slider_row(layout, "SFX Volume", 0.0, 1.0, 0.01, _on_sfx_volume_changed)
 	_text_speed_slider = _add_slider_row(layout, "Text Speed", 0.5, 2.0, 0.05, _on_text_speed_changed)
+	_text_speed_value_label = _make_label("", 14)
+	_text_speed_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	layout.add_child(_text_speed_value_label)
 
 	_fullscreen_checkbox = CheckBox.new()
 	_fullscreen_checkbox.text = "Fullscreen"
@@ -101,6 +108,7 @@ func _refresh_controls() -> void:
 	_bgm_slider.value = SettingsManager.get_bgm_volume()
 	_sfx_slider.value = SettingsManager.get_sfx_volume()
 	_text_speed_slider.value = SettingsManager.get_text_speed()
+	_refresh_text_speed_value()
 	_fullscreen_checkbox.button_pressed = SettingsManager.is_fullscreen()
 	_screen_shake_checkbox.button_pressed = SettingsManager.is_screen_shake_enabled()
 	_refreshing = false
@@ -117,8 +125,8 @@ func _make_label(text: String, font_size: int) -> Label:
 
 
 func _make_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button: Button = PrimaryButtonScene.instantiate()
+	button.set_text(text)
 	button.custom_minimum_size = Vector2(220, 44)
 	return button
 
@@ -141,6 +149,12 @@ func _on_sfx_volume_changed(value: float) -> void:
 func _on_text_speed_changed(value: float) -> void:
 	if not _refreshing:
 		SettingsManager.set_text_speed(value)
+	_refresh_text_speed_value()
+
+
+func _refresh_text_speed_value() -> void:
+	if _text_speed_value_label != null:
+		_text_speed_value_label.text = "%.1fx" % SettingsManager.get_text_speed()
 
 
 func _on_fullscreen_toggled(enabled: bool) -> void:

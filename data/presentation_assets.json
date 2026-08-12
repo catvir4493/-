@@ -1,0 +1,98 @@
+{
+  "manifest_version": 1,
+  "backgrounds": {
+    "default_background": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "main_menu": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_default": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_night_01": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_night_02": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_night_03": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_night_04": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_night_05": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "shop_special": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "result_default": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "night_result_default": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "restock_default": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "archive_default": {"path": "res://assets/art/placeholders/bg_placeholder.svg"},
+    "settings_default": {"path": "res://assets/art/placeholders/bg_placeholder.svg"}
+  },
+  "portraits": {
+    "default_portrait": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_student": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_wet_man": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_red_dress_woman": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_old_man": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_masked_boy": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_worker": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_lost_child": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_driver": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_nameless_guest": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "placeholder_previous_clerk": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "portrait_night_nurse": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"},
+    "portrait_breakfast_man": {"path": "res://assets/art/placeholders/portrait_placeholder.svg"}
+  },
+  "item_icons": {
+    "default_item_icon": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "coffee": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "milk": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "mint_candy": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "black_umbrella": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "red_lighter": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "bandage": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "old_photo": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "ticket": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "sleep_mask": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "tissue": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "dark_chocolate": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "disposable_camera": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "blank_postcard": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "battery": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "flashlight": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "cheap_perfume": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "expired_magazine": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "lucky_sticker": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "rice_ball": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "coin": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "canned_peach": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "instant_noodles": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "blue_pen": {"path": "res://assets/art/placeholders/item_placeholder.svg"},
+    "paper_cup": {"path": "res://assets/art/placeholders/item_placeholder.svg"}
+  },
+  "ui_icons": {
+    "default_ui_icon": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "lock": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "check": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "back": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "coin": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "warning": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "combo": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "archive": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"},
+    "settings": {"path": "res://assets/art/placeholders/ui_icon_placeholder.svg"}
+  },
+  "logos": {
+    "default_logo": {"path": "res://assets/art/placeholders/logo_placeholder.svg"},
+    "main": {"path": "res://assets/art/placeholders/logo_placeholder.svg"}
+  },
+  "fonts": {
+    "font_ui_default": {"path": ""},
+    "font_ui_title": {"path": ""},
+    "font_dialogue": {"path": ""}
+  },
+  "bgm": {
+    "main_menu": {"path": ""},
+    "shop_default": {"path": ""},
+    "shop_special": {"path": ""},
+    "night_result": {"path": ""}
+  },
+  "sfx": {
+    "ui_click": {"path": ""},
+    "ui_confirm": {"path": ""},
+    "ui_cancel": {"path": ""},
+    "shop_door_bell": {"path": ""},
+    "cash_register": {"path": ""},
+    "item_select": {"path": ""},
+    "customer_good": {"path": ""},
+    "customer_fail": {"path": ""},
+    "night_complete": {"path": ""}
+  }
+}

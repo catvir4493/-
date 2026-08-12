@@ -70,5 +70,29 @@
 		"bonus_tags": ["希望", "安慰"],
 		"score_bonus": 15,
 		"special_dialogue": "热饭团和小小的幸运，足够把今晚撑过去。"
+	},
+	{
+		"id": "combo_write_it_down",
+		"name": "终于写下来了",
+		"required_items": ["blue_pen", "blank_postcard"],
+		"bonus_tags": ["勇气", "真实"],
+		"score_bonus": 15,
+		"special_dialogue": "有些话还没准备好交给别人，但至少已经不只留在心里。"
+	},
+	{
+		"id": "combo_childhood_flavor",
+		"name": "小时候的味道",
+		"required_items": ["canned_peach", "old_photo"],
+		"bonus_tags": ["回忆", "安慰"],
+		"score_bonus": 15,
+		"special_dialogue": "味道比照片更早认出了那段日子。"
+	},
+	{
+		"id": "combo_sit_for_a_while",
+		"name": "先坐一会儿",
+		"required_items": ["instant_noodles", "paper_cup"],
+		"bonus_tags": ["温和", "连接"],
+		"score_bonus": 15,
+		"special_dialogue": "不必马上想通。先把这三分钟安静地过完。"
 	}
 ]

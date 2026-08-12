@@ -1,4 +1,9 @@
-extends Control
+extends "res://scripts/ui/BaseScreen.gd"
+
+const ScreenBackgroundScene = preload("res://scenes/ui/components/ScreenBackground.tscn")
+const PrimaryButtonScene = preload("res://scenes/ui/components/PrimaryButton.tscn")
+const SectionTitleScene = preload("res://scenes/ui/components/SectionTitle.tscn")
+const InfoPanelScene = preload("res://scenes/ui/components/InfoPanel.tscn")
 
 var _profile_list: VBoxContainer
 var _detail_title_label: Label
@@ -8,6 +13,7 @@ var _back_button: Button
 
 
 func _ready() -> void:
+	super._ready()
 	_load_archive_progress_if_needed()
 	_build_ui()
 	_select_first_profile()
@@ -24,9 +30,8 @@ func _load_archive_progress_if_needed() -> void:
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.055, 0.06, 0.08)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var background: Control = ScreenBackgroundScene.instantiate()
+	background.set_background("archive_default")
 	add_child(background)
 
 	var margin := MarginContainer.new()
@@ -41,7 +46,9 @@ func _build_ui() -> void:
 	layout.add_theme_constant_override("separation", 16)
 	margin.add_child(layout)
 
-	var title := _make_label("深夜顾客档案", 34)
+	var title: Label = SectionTitleScene.instantiate()
+	title.set_title("深夜顾客档案")
+	title.add_theme_font_size_override("font_size", 34)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	layout.add_child(title)
 
@@ -84,35 +91,16 @@ func _build_profile_list_panel() -> Control:
 
 
 func _build_detail_panel() -> Control:
-	var panel := PanelContainer.new()
+	var panel: Control = InfoPanelScene.instantiate()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_theme_constant_override("margin_top", 22)
-	margin.add_theme_constant_override("margin_right", 24)
-	margin.add_theme_constant_override("margin_bottom", 22)
-	panel.add_child(margin)
-
-	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 18)
-	margin.add_child(layout)
-
-	_detail_title_label = _make_label("", 28)
+	_detail_title_label = panel.get_title_label()
+	_detail_title_label.add_theme_font_size_override("font_size", 28)
 	_detail_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	layout.add_child(_detail_title_label)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(scroll)
-
-	_detail_body_label = _make_label("", 18)
+	_detail_body_label = panel.get_content_label()
 	_detail_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_detail_body_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_detail_body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_detail_body_label)
 
 	return panel
 
@@ -250,8 +238,8 @@ func _make_label(text: String, font_size: int) -> Label:
 
 
 func _make_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button: Button = PrimaryButtonScene.instantiate()
+	button.set_text(text)
 	button.custom_minimum_size = Vector2(220, 44)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

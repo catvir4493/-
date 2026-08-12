@@ -234,7 +234,7 @@ func _find_customer_in_current_queue(request_id: String) -> Dictionary:
 func _get_all_customer_ids() -> Array[String]:
 	var result: Array[String] = []
 	for customer in _data_manager.get_all_customers():
-		if customer is Dictionary:
+		if customer is Dictionary and int(customer.get("min_night", 99)) <= 5:
 			result.append(str(customer.get("id", "")))
 
 	return result

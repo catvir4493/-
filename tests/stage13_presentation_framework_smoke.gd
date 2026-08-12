@@ -253,8 +253,8 @@ func _test_gameplay_invariants() -> void:
 		_assert_equal(slots.size(), expected_counts[night_number], "Night %d customer count must remain unchanged." % night_number)
 		var resolved: Array = CustomerSystem.resolve_night_customer_slots(night_config)
 		_assert_equal(resolved.size(), expected_counts[night_number], "CustomerSystem must still resolve the Night %d schedule." % night_number)
-	_assert_equal(DataManager.get_all_chapters().size(), 1, "Stage 12 chapter data must remain available.")
-	_assert_equal(DataManager.get_all_story_events().size(), 3, "Stage 12 story event data must remain available.")
+	_assert_equal(DataManager.get_all_chapters().size(), 2, "Stage 12 chapter framework must load expanded data.")
+	_assert_equal(DataManager.get_all_story_events().size(), 7, "Stage 12 event framework must load expanded data.")
 	_assert_equal(DataManager.get_all_endings().size(), 1, "Stage 12 ending data must remain available.")
 	_assert_equal(SaveManager.create_default_save().get("save_version", 0), 1, "Game save_version must remain 1.")
 

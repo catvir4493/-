@@ -214,14 +214,14 @@ func _test_post_fifth_night_fallback() -> void:
 	for night in [1, 2, 3, 4, 5]:
 		_record_expected_night_as_served(night)
 
-	_customer_system.build_queue_for_night(6)
+	_customer_system.build_queue_for_night(11)
 	var first_fallback_ids = _customer_system.get_current_queue_request_ids()
-	_customer_system.build_queue_for_night(6)
+	_customer_system.build_queue_for_night(11)
 	var second_fallback_ids = _customer_system.get_current_queue_request_ids()
 
-	_assert(first_fallback_ids.size() > 0, "Night > 5 fallback queue must not be empty.")
-	_assert(first_fallback_ids.size() <= 8, "Night > 5 fallback queue must have at most 8 customers.")
-	_assert_equal(first_fallback_ids, second_fallback_ids, "Night > 5 fallback queue must be deterministic.")
+	_assert(first_fallback_ids.size() > 0, "Unconfigured future-night fallback queue must not be empty.")
+	_assert(first_fallback_ids.size() <= 8, "Unconfigured future-night fallback queue must have at most 8 customers.")
+	_assert_equal(first_fallback_ids, second_fallback_ids, "Unconfigured future-night fallback queue must be deterministic.")
 
 	for customer in _customer_system.get_current_customer_queue():
 		_assert(

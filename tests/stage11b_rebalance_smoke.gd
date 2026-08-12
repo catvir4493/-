@@ -90,7 +90,7 @@ func _test_rebalanced_items() -> void:
 
 
 func _test_customer_solvability() -> void:
-	var customers: Array = _data_manager.get_all_customers()
+	var customers: Array = _data_manager.get_all_customers().filter(func(customer): return customer is Dictionary and int(customer.get("min_night", 99)) <= 5)
 	_assert_equal(customers.size(), 30, "Exactly 30 customer requests must remain.")
 	var blocker_count := 0
 	for customer in customers:
@@ -143,7 +143,13 @@ func _score_for(customer: Dictionary, item_ids: Array) -> int:
 
 
 func _test_combos() -> void:
-	var combos: Array = _data_manager.get_all_combos()
+	var combos: Array = _data_manager.get_all_combos().filter(func(combo):
+		if not (combo is Dictionary): return false
+		for item_id in combo.get("required_items", []):
+			var item: Dictionary = _data_manager.get_item_by_id(str(item_id))
+			if item.is_empty() or int(item.get("unlock_day", 99)) > 5: return false
+		return true
+	)
 	_assert_equal(combos.size(), 9, "Exactly 9 combos must remain.")
 	var critical_count := 0
 	var seen_ids := {}
