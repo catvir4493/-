@@ -16,7 +16,7 @@
 		"description": "温热之后会让人稍微安心一点。",
 		"buy_price": 2,
 		"sell_price": 5,
-		"tags": ["安慰", "睡眠", "温和"],
+		"tags": ["睡眠", "温和"],
 		"rarity": "common",
 		"unlock_day": 1,
 		"max_stock": 8
@@ -69,9 +69,9 @@
 		"id": "old_photo",
 		"name": "旧照片",
 		"description": "不知道是谁遗落在店里的照片。",
-		"buy_price": 0,
+		"buy_price": 2,
 		"sell_price": 8,
-		"tags": ["回忆", "悲伤", "真实"],
+		"tags": ["回忆", "悲伤"],
 		"rarity": "rare",
 		"unlock_day": 1,
 		"max_stock": 1
@@ -218,5 +218,49 @@
 		"rarity": "rare",
 		"unlock_day": 5,
 		"max_stock": 1
+	},
+	{
+		"id": "canned_peach",
+		"name": "黄桃罐头",
+		"description": "甜得有些过头，像小时候生病时才会吃到的东西。",
+		"buy_price": 3,
+		"sell_price": 7,
+		"tags": ["安慰", "回忆", "温和"],
+		"rarity": "common",
+		"unlock_day": 6,
+		"max_stock": 5
+	},
+	{
+		"id": "instant_noodles",
+		"name": "桶装泡面",
+		"description": "三分钟之后，至少能让胃里热起来。",
+		"buy_price": 3,
+		"sell_price": 7,
+		"tags": ["温和", "安慰", "连接"],
+		"rarity": "common",
+		"unlock_day": 6,
+		"max_stock": 6
+	},
+	{
+		"id": "blue_pen",
+		"name": "蓝色圆珠笔",
+		"description": "写得不算顺，但有些话本来也不应该太顺。",
+		"buy_price": 2,
+		"sell_price": 5,
+		"tags": ["真实", "回忆", "连接"],
+		"rarity": "common",
+		"unlock_day": 7,
+		"max_stock": 6
+	},
+	{
+		"id": "paper_cup",
+		"name": "纸杯",
+		"description": "很轻，也装不了太多东西。",
+		"buy_price": 1,
+		"sell_price": 3,
+		"tags": ["温和", "连接", "短效"],
+		"rarity": "common",
+		"unlock_day": 8,
+		"max_stock": 8
 	}
 ]

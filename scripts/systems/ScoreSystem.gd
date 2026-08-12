@@ -104,7 +104,7 @@ func _get_grade(score: int) -> String:
 	return "fail"
 
 
-func _calculate_income(item_sell_total: int, base_reward: int, grade: String) -> int:
+func _calculate_income(item_sell_total: int, _base_reward: int, grade: String) -> int:
 	var grade_bonus := 0
 
 	match grade:
@@ -115,7 +115,7 @@ func _calculate_income(item_sell_total: int, base_reward: int, grade: String) ->
 		"fail":
 			grade_bonus = -2
 
-	return maxi(0, item_sell_total + base_reward + grade_bonus)
+	return maxi(0, item_sell_total + grade_bonus)
 
 
 func _get_customer_feedback(grade: String) -> String:

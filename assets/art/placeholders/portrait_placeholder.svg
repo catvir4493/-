@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1024" viewBox="0 0 768 1024">
+  <rect width="768" height="1024" rx="48" fill="#171b28"/>
+  <circle cx="384" cy="330" r="150" fill="#56627c"/>
+  <path d="M150 940c20-260 130-390 234-390s214 130 234 390" fill="#3b465f"/>
+  <text x="384" y="980" fill="#aeb8cf" font-family="sans-serif" font-size="48" text-anchor="middle">PORTRAIT</text>
+</svg>

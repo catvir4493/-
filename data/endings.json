@@ -1,0 +1,12 @@
+[
+	{
+		"id": "ending_mvp_placeholder",
+		"name": "五夜之后",
+		"description": "玩家完成了前五夜，知道这家便利店还有更多秘密。",
+		"conditions": {
+			"completed_chapter": "chapter_01",
+			"min_night": 5
+		},
+		"is_placeholder": true
+	}
+]

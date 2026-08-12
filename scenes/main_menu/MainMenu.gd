@@ -1,13 +1,21 @@
-extends Control
+extends "res://scripts/ui/BaseScreen.gd"
 
+const Config = preload("res://scripts/config/GameConfig.gd")
+const ScreenBackgroundScene = preload("res://scenes/ui/components/ScreenBackground.tscn")
+const PrimaryButtonScene = preload("res://scenes/ui/components/PrimaryButton.tscn")
+
+var _title_label: Label
+var _logo_rect: TextureRect
 var _new_game_button: Button
 var _continue_button: Button
 var _archive_button: Button
+var _settings_button: Button
 var _status_label: Label
 var _is_transitioning := false
 
 
 func _ready() -> void:
+	super._ready()
 	GameManager.go_to_main_menu(false)
 	_load_archive_progress_if_needed()
 	_build_ui()
@@ -17,9 +25,8 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.06, 0.07, 0.1)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var background: Control = ScreenBackgroundScene.instantiate()
+	background.set_background("main_menu")
 	add_child(background)
 
 	var center := CenterContainer.new()
@@ -39,8 +46,17 @@ func _build_ui() -> void:
 	layout.add_theme_constant_override("separation", 18)
 	margin.add_child(layout)
 
-	var title := _make_label("深夜愿望便利店", 36)
-	layout.add_child(title)
+	_logo_rect = TextureRect.new()
+	_logo_rect.name = "MainLogo"
+	_logo_rect.texture = AssetRegistry.get_texture("logos", "main")
+	_logo_rect.custom_minimum_size = Vector2(420, 140)
+	_logo_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_logo_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_logo_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(_logo_rect)
+
+	_title_label = _make_label(Config.GAME_TITLE, 36)
+	layout.add_child(_title_label)
 
 	var subtitle := _make_label("午夜开门，天亮前打烊。", 18)
 	layout.add_child(subtitle)
@@ -60,6 +76,10 @@ func _build_ui() -> void:
 	_archive_button = _make_button("Customer Archive")
 	_archive_button.pressed.connect(_on_archive_pressed)
 	layout.add_child(_archive_button)
+
+	_settings_button = _make_button("Settings")
+	_settings_button.pressed.connect(_on_settings_pressed)
+	layout.add_child(_settings_button)
 
 	var quit_button := _make_button("Quit")
 	quit_button.pressed.connect(_on_quit_pressed)
@@ -81,8 +101,8 @@ func _make_label(text: String, font_size: int) -> Label:
 
 
 func _make_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button: Button = PrimaryButtonScene.instantiate()
+	button.set_text(text)
 	button.custom_minimum_size = Vector2(260, 44)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	return button
@@ -123,6 +143,7 @@ func _on_continue_pressed() -> void:
 		_status_label.text = "存档读取失败。"
 		_new_game_button.disabled = false
 		_archive_button.disabled = false
+		_settings_button.disabled = false
 		_continue_button.disabled = not SaveManager.has_valid_save()
 
 
@@ -134,6 +155,14 @@ func _on_archive_pressed() -> void:
 	GameManager.go_to_archive()
 
 
+func _on_settings_pressed() -> void:
+	if _settings_button.disabled or _is_transitioning:
+		return
+
+	_begin_transition()
+	GameManager.go_to_settings()
+
+
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
@@ -143,6 +172,7 @@ func _begin_transition() -> void:
 	_new_game_button.disabled = true
 	_continue_button.disabled = true
 	_archive_button.disabled = true
+	_settings_button.disabled = true
 	_status_label.text = ""
 
 
@@ -153,5 +183,14 @@ func _on_scene_change_failed(_scene_path: String, message: String) -> void:
 	_is_transitioning = false
 	_new_game_button.disabled = false
 	_archive_button.disabled = false
+	_settings_button.disabled = false
 	_continue_button.disabled = not SaveManager.has_valid_save()
 	_status_label.text = "场景切换失败：%s" % message
+
+
+func has_settings_entry() -> bool:
+	return _settings_button != null
+
+
+func has_text_title_fallback() -> bool:
+	return _title_label != null and not _title_label.text.is_empty()

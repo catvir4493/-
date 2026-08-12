@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/components/ItemCard.gd" id="1"]
+
+[node name="ItemCard" type="Button"]
+custom_minimum_size = Vector2(290, 142)
+script = ExtResource("1")

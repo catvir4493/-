@@ -5,8 +5,6 @@ signal current_customer_changed(customer: Dictionary, customer_index: int)
 signal night_queue_finished(current_night: int)
 
 const FALLBACK_CUSTOMER_LIMIT := 8
-const FINAL_STORY_ID := "previous_clerk_story"
-const FINAL_STORY_STAGE := 3
 
 var current_night := 1
 var current_customer_index := 0
@@ -170,7 +168,7 @@ func _build_fallback_queue(night_number: int, limit: int) -> Array[Dictionary]:
 		if not (customer is Dictionary):
 			continue
 
-		if _is_final_story_request(customer):
+		if _is_chapter_final_request(customer):
 			continue
 
 		if not _get_request_unavailable_reason(customer, night_number, queue).is_empty():
@@ -226,6 +224,9 @@ func _lookup_customer_request(story_id: String, story_stage: int) -> Dictionary:
 	return {}
 
 
+# TODO: Route these checks through ContentUnlockSystem after it accepts an explicit
+# night context; fallback queue validation intentionally evaluates nights without
+# mutating GameManager.current_night.
 func _get_request_unavailable_reason(request: Dictionary, night_number: int, queue: Array[Dictionary]) -> String:
 	if request.is_empty():
 		return "request not found"
@@ -238,7 +239,7 @@ func _get_request_unavailable_reason(request: Dictionary, night_number: int, que
 		return "request already exists in current queue"
 
 	var story_stage := _to_int(request.get("story_stage", 0), 0)
-	if story_stage < 1 or story_stage > 3:
+	if story_stage < 1:
 		return "story_stage is invalid"
 
 	var min_night := maxi(_to_int(request.get("min_night", 1), 1), 1)
@@ -292,11 +293,15 @@ func _queue_has_request_id(queue: Array[Dictionary], request_id: String) -> bool
 	return false
 
 
-func _is_final_story_request(request: Dictionary) -> bool:
-	return (
-		str(request.get("story_id", "")) == FINAL_STORY_ID
-		and _to_int(request.get("story_stage", 0), 0) == FINAL_STORY_STAGE
-	)
+func _is_chapter_final_request(request: Dictionary) -> bool:
+	var story_id := str(request.get("story_id", ""))
+	var story_stage := _to_int(request.get("story_stage", 0), 0)
+	for chapter in DataManager.get_all_chapters():
+		if not (chapter is Dictionary):
+			continue
+		if story_id == str(chapter.get("final_story_id", "")) and story_stage == _to_int(chapter.get("final_story_stage", 0), 0):
+			return true
+	return false
 
 
 func _warn_slot_unavailable(night_number: int, slot_index: int, story_id: String, story_stage: int, request_id: String, reason: String) -> void:

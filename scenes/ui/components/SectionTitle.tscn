@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/components/SectionTitle.gd" id="1"]
+
+[node name="SectionTitle" type="Label"]
+theme_override_colors/font_color = Color(1, 0.81, 0.48, 1)
+theme_override_font_sizes/font_size = 24
+autowrap_mode = 2
+script = ExtResource("1")

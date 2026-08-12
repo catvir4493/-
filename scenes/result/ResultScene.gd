@@ -1,49 +1,73 @@
-extends Control
+extends "res://scripts/ui/BaseScreen.gd"
+
+const ScreenBackgroundScene = preload("res://scenes/ui/components/ScreenBackground.tscn")
+const PrimaryButtonScene = preload("res://scenes/ui/components/PrimaryButton.tscn")
+const ScreenLayoutScene = preload("res://scenes/ui/layouts/ScreenLayout.tscn")
+const InfoPanelScene = preload("res://scenes/ui/components/InfoPanel.tscn")
+const StatRowScene = preload("res://scenes/ui/components/StatRow.tscn")
+const DialoguePanelScene = preload("res://scenes/ui/components/DialoguePanel.tscn")
+const NarrativeOverlayScene = preload("res://scenes/ui/components/NarrativeOverlay.tscn")
+
+const PRESENTABLE_STORY_EVENT_IDS := [
+	"event_nurse_resignation",
+	"event_breakfast_apology"
+]
 
 var _title_label: Label
 var _summary_label: Label
 var _continue_button: Button
+var _stats: VBoxContainer
+var _dialogue_panel: Control
+var _narrative_overlay: Control
+var _pending_event_presentations: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	super._ready()
 	_build_ui()
 	_refresh()
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.07, 0.07, 0.1)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var background: Control = ScreenBackgroundScene.instantiate()
+	background.set_background("result_default")
 	add_child(background)
 
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
-
-	var margin := MarginContainer.new()
-	margin.custom_minimum_size = Vector2(720, 0)
-	margin.add_theme_constant_override("margin_left", 32)
-	margin.add_theme_constant_override("margin_top", 32)
-	margin.add_theme_constant_override("margin_right", 32)
-	margin.add_theme_constant_override("margin_bottom", 32)
-	center.add_child(margin)
-
-	var layout := VBoxContainer.new()
-	layout.alignment = BoxContainer.ALIGNMENT_CENTER
-	layout.add_theme_constant_override("separation", 18)
-	margin.add_child(layout)
+	var screen_layout: Control = ScreenLayoutScene.instantiate()
+	add_child(screen_layout)
+	var header: Control = screen_layout.get_header()
+	var content: Control = screen_layout.get_content()
+	var footer: Control = screen_layout.get_footer()
 
 	_title_label = _make_label("", 32)
-	layout.add_child(_title_label)
+	header.add_child(_title_label)
 
-	_summary_label = _make_label("", 17)
-	_summary_label.custom_minimum_size = Vector2(640, 360)
+	var panel: Control = InfoPanelScene.instantiate()
+	panel.set_title("服务结果")
+	content.add_child(panel)
+	var panel_layout := panel.get_node("Margin/Layout") as VBoxContainer
+	_dialogue_panel = DialoguePanelScene.instantiate()
+	panel_layout.add_child(_dialogue_panel)
+	panel_layout.move_child(_dialogue_panel, 1)
+	_dialogue_panel.dialogue_revealed.connect(_on_feedback_revealed)
+	_dialogue_panel.continue_requested.connect(_on_feedback_continue_requested)
+
+	_stats = VBoxContainer.new()
+	_stats.name = "Stats"
+	panel_layout.add_child(_stats)
+	panel_layout.move_child(_stats, 1)
+
+	_summary_label = panel.get_content_label()
 	_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	layout.add_child(_summary_label)
 
 	_continue_button = _make_button("Continue")
+	_continue_button.disabled = true
 	_continue_button.pressed.connect(_on_continue_pressed)
-	layout.add_child(_continue_button)
+	footer.add_child(_continue_button)
+
+	_narrative_overlay = NarrativeOverlayScene.instantiate()
+	_narrative_overlay.dismissed.connect(_on_event_overlay_dismissed)
+	add_child(_narrative_overlay)
 
 
 func _refresh() -> void:
@@ -51,13 +75,18 @@ func _refresh() -> void:
 	if result.is_empty():
 		_title_label.text = "顾客已接待"
 		_summary_label.text = "评分结果暂时为空。"
+		_dialogue_panel.show_dialogue("顾客", "评分结果暂时为空。", true)
 		return
 
 	_title_label.text = "%s 已接待" % str(result.get("customer_name", "顾客"))
+	_refresh_stats(result)
+	_dialogue_panel.show_dialogue(
+		str(result.get("customer_name", "顾客")),
+		str(result.get("customer_feedback", "…"))
+	)
+	_pending_event_presentations = _collect_presentable_story_events()
+	_continue_button.disabled = true
 	_summary_label.text = "\n".join([
-		"顾客反馈：%s" % str(result.get("customer_feedback", "")),
-		"评价等级：%s" % str(result.get("grade", "")).capitalize(),
-		"分数：%d" % int(result.get("score", 0)),
 		"已选择商品：%s" % _format_array(result.get("selected_item_names", []), "无"),
 		"你理解到了：%s" % _format_array(
 			result.get("matched_tags", []),
@@ -71,9 +100,23 @@ func _refresh() -> void:
 			result.get("bad_tags", []),
 			"没有产生明显反效果。"
 		),
-		"发现特殊组合：%s" % _format_combo_names(result),
-		"本次收入：%d" % int(result.get("income", 0))
+		"发现特殊组合：%s" % _format_combo_names(result)
 	])
+
+
+func _refresh_stats(result: Dictionary) -> void:
+	for child in _stats.get_children():
+		child.queue_free()
+	_add_stat("评价等级", str(result.get("grade", "")).capitalize())
+	_add_stat("分数", str(int(result.get("score", 0))))
+	_add_stat("本次收入", str(int(result.get("income", 0))))
+	_add_stat("组合加分", str(_get_combo_score_bonus(result)))
+
+
+func _add_stat(label_text: String, value_text: String) -> void:
+	var row: Control = StatRowScene.instantiate()
+	row.setup(label_text, value_text)
+	_stats.add_child(row)
 
 
 func _format_array(value, empty_text: String = "无") -> String:
@@ -169,15 +212,15 @@ func _make_label(text: String, font_size: int) -> Label:
 
 
 func _make_button(text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button: Button = PrimaryButtonScene.instantiate()
+	button.set_text(text)
 	button.custom_minimum_size = Vector2(220, 44)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	return button
 
 
 func _on_continue_pressed() -> void:
-	continue_once()
+	_advance_after_feedback()
 
 
 func continue_once(change_scene: bool = true) -> bool:
@@ -193,3 +236,62 @@ func continue_once(change_scene: bool = true) -> bool:
 		GameManager.go_to_night_result(change_scene)
 
 	return true
+
+
+func _on_feedback_continue_requested() -> void:
+	_advance_after_feedback()
+
+
+func _on_feedback_revealed() -> void:
+	_continue_button.disabled = false
+
+
+func _advance_after_feedback() -> void:
+	if not _pending_event_presentations.is_empty():
+		_continue_button.disabled = true
+		_show_next_event_overlay()
+		return
+	continue_once()
+
+
+func _show_next_event_overlay() -> void:
+	if _pending_event_presentations.is_empty():
+		_continue_button.disabled = false
+		continue_once()
+		return
+	var event: Dictionary = _pending_event_presentations.pop_front()
+	_narrative_overlay.show_text(
+		str(event.get("title", "深夜片段")),
+		str(event.get("text", ""))
+	)
+
+
+func _on_event_overlay_dismissed() -> void:
+	_show_next_event_overlay()
+
+
+func _collect_presentable_story_events() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for event in StoryEventSystem.get_last_triggered_events():
+		if event is Dictionary and can_present_story_event(str(event.get("id", ""))):
+			result.append(event.duplicate(true))
+	return result
+
+
+func can_present_story_event(event_id: String) -> bool:
+	return PRESENTABLE_STORY_EVENT_IDS.has(event_id)
+
+
+func get_presentable_story_event_ids() -> Array[String]:
+	var result: Array[String] = []
+	for event_id in PRESENTABLE_STORY_EVENT_IDS:
+		result.append(str(event_id))
+	return result
+
+
+func get_dialogue_panel() -> Control:
+	return _dialogue_panel
+
+
+func get_narrative_overlay() -> Control:
+	return _narrative_overlay
