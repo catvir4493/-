@@ -16,7 +16,7 @@
 		"description": "温热之后会让人稍微安心一点。",
 		"buy_price": 2,
 		"sell_price": 5,
-		"tags": ["安慰", "睡眠", "温和"],
+		"tags": ["睡眠", "温和"],
 		"rarity": "common",
 		"unlock_day": 1,
 		"max_stock": 8
@@ -69,9 +69,9 @@
 		"id": "old_photo",
 		"name": "旧照片",
 		"description": "不知道是谁遗落在店里的照片。",
-		"buy_price": 0,
+		"buy_price": 2,
 		"sell_price": 8,
-		"tags": ["回忆", "悲伤", "真实"],
+		"tags": ["回忆", "悲伤"],
 		"rarity": "rare",
 		"unlock_day": 1,
 		"max_stock": 1

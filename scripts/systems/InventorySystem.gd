@@ -254,7 +254,7 @@ func _get_buy_failure_reason(item_id: String, quantity: int) -> String:
 
 
 func _is_item_unlocked(item: Dictionary) -> bool:
-	return int(item.get("unlock_day", 1)) <= GameManager.current_night
+	return ContentUnlockSystem.is_item_unlocked(str(item.get("id", "")))
 
 
 func _make_buy_result(success: bool, reason: String, item_id: String, quantity: int, cost: int, new_stock: int, remaining_money: int) -> Dictionary:

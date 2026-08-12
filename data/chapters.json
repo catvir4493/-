@@ -1,0 +1,13 @@
+[
+	{
+		"id": "chapter_01",
+		"name": "第一章：深夜开店",
+		"description": "玩家作为新任夜班店员，完成前五夜营业，并遇见上一任店员。",
+		"start_night": 1,
+		"end_night": 5,
+		"required_nights": [1, 2, 3, 4, 5],
+		"final_story_id": "previous_clerk_story",
+		"final_story_stage": 3,
+		"is_mvp_chapter": true
+	}
+]

@@ -163,7 +163,7 @@ func _refresh_detail() -> void:
 		return
 
 	var story_id := str(profile.get("story_id", ""))
-	if not CustomerProgressSystem.has_seen_customer(story_id):
+	if not ContentUnlockSystem.is_profile_visible(story_id):
 		_detail_title_label.text = "尚未遇见这位顾客。"
 		_detail_body_label.text = str(profile.get("locked_description", "尚未遇见。"))
 		return
@@ -187,7 +187,7 @@ func _refresh_detail() -> void:
 func _make_profile_button(profile: Dictionary) -> Button:
 	var profile_id := str(profile.get("id", ""))
 	var story_id := str(profile.get("story_id", ""))
-	var unlocked := CustomerProgressSystem.has_seen_customer(story_id)
+	var unlocked := ContentUnlockSystem.is_profile_visible(story_id)
 	var stage := CustomerProgressSystem.get_archive_stage(story_id)
 
 	var button := _make_button("")

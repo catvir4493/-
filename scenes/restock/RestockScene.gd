@@ -184,7 +184,7 @@ func _get_unlocked_items() -> Array:
 		if not (item is Dictionary):
 			continue
 
-		if int(item.get("unlock_day", 1)) <= GameManager.current_night:
+		if ContentUnlockSystem.is_item_unlocked(str(item.get("id", ""))):
 			unlocked_items.append(item)
 
 	return unlocked_items

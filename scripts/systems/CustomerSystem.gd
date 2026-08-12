@@ -226,6 +226,9 @@ func _lookup_customer_request(story_id: String, story_stage: int) -> Dictionary:
 	return {}
 
 
+# TODO: Route these checks through ContentUnlockSystem after it accepts an explicit
+# night context; fallback queue validation intentionally evaluates nights without
+# mutating GameManager.current_night.
 func _get_request_unavailable_reason(request: Dictionary, night_number: int, queue: Array[Dictionary]) -> String:
 	if request.is_empty():
 		return "request not found"

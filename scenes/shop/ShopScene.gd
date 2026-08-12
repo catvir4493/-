@@ -280,7 +280,7 @@ func _make_item_button(item: Dictionary, stock: int) -> Button:
 	var description: String = str(item.get("description", ""))
 	var max_stock: int = int(item.get("max_stock", 0))
 	var unlock_day := int(item.get("unlock_day", 1))
-	var is_unlocked := unlock_day <= GameManager.current_night
+	var is_unlocked := ContentUnlockSystem.is_item_unlocked(item_id)
 	var is_selected: bool = selected_items.has(item_id)
 	var state_text := "可选择"
 	if not is_unlocked:
@@ -379,7 +379,7 @@ func _on_item_pressed(item_id: String) -> void:
 		return
 
 	var item := DataManager.get_item_by_id(item_id)
-	if item.is_empty() or int(item.get("unlock_day", 1)) > GameManager.current_night:
+	if item.is_empty() or not ContentUnlockSystem.is_item_unlocked(item_id):
 		_set_feedback("这个商品尚未解锁。")
 		_refresh_item_cards()
 		return
@@ -425,6 +425,12 @@ func submit_selection(change_scene: bool = true) -> bool:
 
 	NightStatsSystem.record_service_result(service_result)
 	CustomerProgressSystem.record_customer_result(current_customer, service_result)
+	StoryEventSystem.get_available_events({
+		"type": "customer_result",
+		"night": GameManager.current_night,
+		"story_id": str(current_customer.get("story_id", "")),
+		"story_stage": int(current_customer.get("story_stage", 1))
+	})
 	GameManager.add_money(int(service_result.get("income", 0)))
 	InventorySystem.consume_items(selected_ids)
 	PlaytestLogger.log_service(service_result, current_customer)

@@ -1,0 +1,36 @@
+[
+	{
+		"id": "event_chapter_01_started",
+		"type": "chapter_start",
+		"trigger": {
+			"chapter_id": "chapter_01",
+			"night": 1
+		},
+		"title": "第一夜开始",
+		"text": "这家便利店只在深夜亮灯。",
+		"one_time": true
+	},
+	{
+		"id": "event_previous_clerk_final",
+		"type": "special_customer",
+		"trigger": {
+			"story_id": "previous_clerk_story",
+			"story_stage": 3,
+			"night": 5
+		},
+		"title": "上一任店员",
+		"text": "他站在收银台前，像是终于回到了自己离开的地方。",
+		"one_time": true
+	},
+	{
+		"id": "event_chapter_01_completed",
+		"type": "chapter_complete",
+		"trigger": {
+			"chapter_id": "chapter_01",
+			"night": 5
+		},
+		"title": "第一章结束",
+		"text": "五个夜晚过去了，便利店仍然没有在地图上出现。",
+		"one_time": true
+	}
+]

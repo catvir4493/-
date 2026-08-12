@@ -29,7 +29,10 @@ func create_default_save() -> Dictionary:
 		"customer_story_progress": {},
 		"completed_request_ids": [],
 		"discovered_combos": [],
-		"night_stats": {}
+		"night_stats": {},
+		"completed_chapters": [],
+		"triggered_story_events": [],
+		"unlocked_endings": []
 	}
 
 
@@ -47,6 +50,9 @@ func create_save_data(checkpoint_scene: String) -> Dictionary:
 	save_data["completed_request_ids"] = progress_data["completed_request_ids"]
 	save_data["discovered_combos"] = get_discovered_combos()
 	save_data["night_stats"] = NightStatsSystem.export_night_stats()
+	save_data.merge(ChapterSystem.export_chapter_data(), true)
+	save_data.merge(StoryEventSystem.export_event_data(), true)
+	save_data.merge(EndingSystem.export_ending_data(), true)
 	return save_data
 
 
@@ -85,7 +91,7 @@ func load_save_data() -> Dictionary:
 	return get_save_data()
 
 
-func apply_save_data(save_data: Dictionary) -> bool:
+func apply_save_data(save_data: Dictionary, change_scene: bool = true) -> bool:
 	var normalized := _normalize_save_data(save_data)
 	if normalized.is_empty():
 		return false
@@ -105,6 +111,9 @@ func apply_save_data(save_data: Dictionary) -> bool:
 
 	set_discovered_combos(normalized["discovered_combos"])
 	_import_customer_progress_from_save_data(normalized)
+	ChapterSystem.import_chapter_data({"completed_chapters": normalized["completed_chapters"]})
+	StoryEventSystem.import_event_data({"triggered_story_events": normalized["triggered_story_events"]})
+	EndingSystem.import_ending_data({"unlocked_endings": normalized["unlocked_endings"]})
 	if inventory_migration_needed:
 		_write_save_data(current_save, false)
 
@@ -112,13 +121,13 @@ func apply_save_data(save_data: Dictionary) -> bool:
 	if checkpoint == "shop":
 		CustomerSystem.build_queue_for_night(GameManager.current_night)
 		NightStatsSystem.start_night(GameManager.current_night)
-		GameManager.continue_current_night()
+		GameManager.continue_current_night(change_scene)
 	elif checkpoint == "night_result":
 		NightStatsSystem.import_night_stats(normalized["night_stats"])
-		GameManager.go_to_night_result()
+		GameManager.go_to_night_result(change_scene)
 	elif checkpoint == "restock":
 		NightStatsSystem.import_night_stats(normalized["night_stats"])
-		GameManager.go_to_restock(true, false)
+		GameManager.go_to_restock(change_scene, false)
 	else:
 		push_warning("Unsupported checkpoint_scene: %s." % checkpoint)
 		return false
@@ -126,12 +135,12 @@ func apply_save_data(save_data: Dictionary) -> bool:
 	return true
 
 
-func continue_game() -> bool:
+func continue_game(change_scene: bool = true) -> bool:
 	var save_data := load_save_data()
 	if save_data.is_empty():
 		return false
 
-	return apply_save_data(save_data)
+	return apply_save_data(save_data, change_scene)
 
 
 func has_save() -> bool:
@@ -181,6 +190,9 @@ func load_game() -> Dictionary:
 
 
 func new_game(initial_night: int = DEFAULT_START_NIGHT, initial_money: int = DEFAULT_START_MONEY) -> Dictionary:
+	ChapterSystem.reset_chapter_progress()
+	StoryEventSystem.reset_events()
+	EndingSystem.reset_endings()
 	current_save = create_default_save()
 	current_save["current_night"] = max(initial_night, DEFAULT_START_NIGHT)
 	current_save["money"] = max(initial_money, 0)
@@ -475,10 +487,22 @@ func _with_defaults(save_data: Dictionary) -> Dictionary:
 	if not (merged.get("night_stats", {}) is Dictionary):
 		merged["night_stats"] = {}
 
+	if not (merged.get("completed_chapters", []) is Array):
+		merged["completed_chapters"] = []
+
+	if not (merged.get("triggered_story_events", []) is Array):
+		merged["triggered_story_events"] = []
+
+	if not (merged.get("unlocked_endings", []) is Array):
+		merged["unlocked_endings"] = []
+
 	merged["unlocked_items"] = _unique_string_array(merged["unlocked_items"])
 	merged["seen_customers"] = _unique_string_array(merged["seen_customers"])
 	merged["completed_request_ids"] = _unique_string_array(merged["completed_request_ids"])
 	merged["discovered_combos"] = _unique_string_array(merged["discovered_combos"])
+	merged["completed_chapters"] = _unique_string_array(merged["completed_chapters"])
+	merged["triggered_story_events"] = _unique_string_array(merged["triggered_story_events"])
+	merged["unlocked_endings"] = _unique_string_array(merged["unlocked_endings"])
 	merged["inventory"] = merged["inventory"].duplicate(true)
 	merged["customer_story_progress"] = merged["customer_story_progress"].duplicate(true)
 	merged["night_stats"] = merged["night_stats"].duplicate(true)

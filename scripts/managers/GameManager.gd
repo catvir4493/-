@@ -1,5 +1,7 @@
 extends Node
 
+const Config = preload("res://scripts/config/GameConfig.gd")
+
 signal night_changed(current_night: int)
 signal money_changed(money: int)
 signal game_state_changed(new_state: int, previous_state: int)
@@ -21,6 +23,7 @@ enum GameState {
 	RESTOCK,
 	NIGHT_COMPLETE,
 	ARCHIVE,
+	SETTINGS,
 	PAUSED
 }
 
@@ -37,16 +40,18 @@ const STATE_NAMES := {
 	GameState.RESTOCK: "restock",
 	GameState.NIGHT_COMPLETE: "night_complete",
 	GameState.ARCHIVE: "archive",
+	GameState.SETTINGS: "settings",
 	GameState.PAUSED: "paused"
 }
 
 var scene_paths := {
-	GameState.MAIN_MENU: "res://scenes/main_menu/MainMenu.tscn",
-	GameState.SHOP: "res://scenes/shop/ShopScene.tscn",
-	GameState.RESULT: "res://scenes/result/ResultScene.tscn",
-	GameState.NIGHT_COMPLETE: "res://scenes/night_result/NightResultScene.tscn",
-	GameState.RESTOCK: "res://scenes/restock/RestockScene.tscn",
-	GameState.ARCHIVE: "res://scenes/archive/ArchiveScene.tscn"
+	GameState.MAIN_MENU: Config.MAIN_MENU_SCENE,
+	GameState.SHOP: Config.SHOP_SCENE,
+	GameState.RESULT: Config.RESULT_SCENE,
+	GameState.NIGHT_COMPLETE: Config.NIGHT_RESULT_SCENE,
+	GameState.RESTOCK: Config.RESTOCK_SCENE,
+	GameState.ARCHIVE: Config.ARCHIVE_SCENE,
+	GameState.SETTINGS: Config.SETTINGS_SCENE
 }
 
 var game_state: int = GameState.BOOT
@@ -71,6 +76,12 @@ var money: int:
 
 
 func _ready() -> void:
+	if not SceneTransitionManager.transition_started.is_connected(_on_transition_started):
+		SceneTransitionManager.transition_started.connect(_on_transition_started)
+	if not SceneTransitionManager.transition_finished.is_connected(_on_transition_finished):
+		SceneTransitionManager.transition_finished.connect(_on_transition_finished)
+	if not SceneTransitionManager.transition_failed.is_connected(_on_transition_failed):
+		SceneTransitionManager.transition_failed.connect(_on_transition_failed)
 	_set_state(GameState.MAIN_MENU)
 
 
@@ -81,6 +92,9 @@ func start_new_game(change_scene: bool = true) -> void:
 	last_service_result = {}
 	pending_customer_id = ""
 	_reset_customer_progress()
+	ChapterSystem.reset_chapter_progress()
+	StoryEventSystem.reset_events()
+	EndingSystem.reset_endings()
 
 	var inventory_system: Node = _get_inventory_system()
 	if inventory_system != null and inventory_system.has_method("reset_to_default_stock"):
@@ -93,6 +107,7 @@ func start_new_game(change_scene: bool = true) -> void:
 	if save_manager != null:
 		if save_manager.has_method("new_game"):
 			save_manager.new_game(current_night, money)
+		_check_night_start_events()
 		if save_manager.has_method("save_game"):
 			save_manager.save_game("shop")
 
@@ -144,6 +159,7 @@ func start_night(night_id: int = -1, change_scene: bool = true) -> void:
 	pending_customer_id = ""
 	_start_customer_queue()
 	_start_night_stats()
+	_check_night_start_events()
 	_set_state(GameState.SHOP)
 	night_started.emit(current_night)
 
@@ -230,6 +246,13 @@ func go_to_archive(change_scene: bool = true) -> void:
 		_change_scene_for_state(GameState.ARCHIVE)
 
 
+func go_to_settings(change_scene: bool = true) -> void:
+	_set_state(GameState.SETTINGS)
+
+	if change_scene:
+		_change_scene_for_state(GameState.SETTINGS)
+
+
 func finish_restock(change_scene: bool = true) -> void:
 	start_next_night(change_scene)
 
@@ -241,6 +264,7 @@ func start_next_night(change_scene: bool = true) -> void:
 	pending_customer_id = ""
 	_start_customer_queue()
 	_start_night_stats()
+	_check_night_start_events()
 	_set_state(GameState.SHOP)
 	night_started.emit(current_night)
 	save_game("shop")
@@ -303,23 +327,7 @@ func get_scene_path(state: int) -> String:
 
 
 func change_scene_to_path(scene_path: String) -> bool:
-	if scene_path.is_empty():
-		_report_scene_failure(scene_path, "Scene path is empty.")
-		return false
-
-	scene_change_started.emit(scene_path)
-
-	if not ResourceLoader.exists(scene_path):
-		_report_scene_failure(scene_path, "Scene file does not exist yet.")
-		return false
-
-	var error := get_tree().change_scene_to_file(scene_path)
-	if error != OK:
-		_report_scene_failure(scene_path, "Could not change scene. Error code: %s." % error)
-		return false
-
-	scene_change_finished.emit(scene_path)
-	return true
+	return SceneTransitionManager.change_scene(scene_path)
 
 
 func get_state_name(state: int = -1) -> String:
@@ -431,6 +439,15 @@ func _reset_customer_progress() -> void:
 		customer_progress_system.reset_progress()
 
 
+func _check_night_start_events() -> void:
+	var chapter := ChapterSystem.get_chapter_for_night(current_night)
+	StoryEventSystem.get_available_events({
+		"type": "night_start",
+		"night": current_night,
+		"chapter_id": str(chapter.get("id", ""))
+	})
+
+
 func _mark_combo_discovered_from_result(result: Dictionary) -> void:
 	var save_manager: Node = _get_save_manager()
 	if save_manager == null or not save_manager.has_method("mark_combo_discovered"):
@@ -457,6 +474,13 @@ func _mark_single_combo_discovered(save_manager: Node, combo_result: Dictionary)
 	save_manager.mark_combo_discovered(combo_id)
 
 
-func _report_scene_failure(scene_path: String, message: String) -> void:
-	push_warning("%s %s" % [message, scene_path])
+func _on_transition_started(scene_path: String) -> void:
+	scene_change_started.emit(scene_path)
+
+
+func _on_transition_finished(scene_path: String) -> void:
+	scene_change_finished.emit(scene_path)
+
+
+func _on_transition_failed(scene_path: String, message: String) -> void:
 	scene_change_failed.emit(scene_path, message)

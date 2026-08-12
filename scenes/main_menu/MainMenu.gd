@@ -1,8 +1,11 @@
 extends Control
 
+const Config = preload("res://scripts/config/GameConfig.gd")
+
 var _new_game_button: Button
 var _continue_button: Button
 var _archive_button: Button
+var _settings_button: Button
 var _status_label: Label
 var _is_transitioning := false
 
@@ -39,7 +42,7 @@ func _build_ui() -> void:
 	layout.add_theme_constant_override("separation", 18)
 	margin.add_child(layout)
 
-	var title := _make_label("深夜愿望便利店", 36)
+	var title := _make_label(Config.GAME_TITLE, 36)
 	layout.add_child(title)
 
 	var subtitle := _make_label("午夜开门，天亮前打烊。", 18)
@@ -60,6 +63,10 @@ func _build_ui() -> void:
 	_archive_button = _make_button("Customer Archive")
 	_archive_button.pressed.connect(_on_archive_pressed)
 	layout.add_child(_archive_button)
+
+	_settings_button = _make_button("Settings")
+	_settings_button.pressed.connect(_on_settings_pressed)
+	layout.add_child(_settings_button)
 
 	var quit_button := _make_button("Quit")
 	quit_button.pressed.connect(_on_quit_pressed)
@@ -123,6 +130,7 @@ func _on_continue_pressed() -> void:
 		_status_label.text = "存档读取失败。"
 		_new_game_button.disabled = false
 		_archive_button.disabled = false
+		_settings_button.disabled = false
 		_continue_button.disabled = not SaveManager.has_valid_save()
 
 
@@ -134,6 +142,14 @@ func _on_archive_pressed() -> void:
 	GameManager.go_to_archive()
 
 
+func _on_settings_pressed() -> void:
+	if _settings_button.disabled or _is_transitioning:
+		return
+
+	_begin_transition()
+	GameManager.go_to_settings()
+
+
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
@@ -143,6 +159,7 @@ func _begin_transition() -> void:
 	_new_game_button.disabled = true
 	_continue_button.disabled = true
 	_archive_button.disabled = true
+	_settings_button.disabled = true
 	_status_label.text = ""
 
 
@@ -153,5 +170,10 @@ func _on_scene_change_failed(_scene_path: String, message: String) -> void:
 	_is_transitioning = false
 	_new_game_button.disabled = false
 	_archive_button.disabled = false
+	_settings_button.disabled = false
 	_continue_button.disabled = not SaveManager.has_valid_save()
 	_status_label.text = "场景切换失败：%s" % message
+
+
+func has_settings_entry() -> bool:
+	return _settings_button != null

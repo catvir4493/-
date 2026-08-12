@@ -7,9 +7,25 @@ var _restock_button: Button
 
 func _ready() -> void:
 	_build_ui()
+	_update_framework_progress()
 	_refresh()
 	if not SaveManager.save_game("night_result"):
 		push_warning("Failed to save night_result checkpoint.")
+
+
+func _update_framework_progress() -> void:
+	if GameManager.current_night != 5:
+		return
+
+	ChapterSystem.mark_chapter_completed("chapter_01")
+	StoryEventSystem.get_available_events({
+		"type": "night_result",
+		"night": 5,
+		"chapter_id": "chapter_01"
+	})
+	for ending in EndingSystem.get_available_endings():
+		if ending is Dictionary:
+			EndingSystem.unlock_ending(str(ending.get("id", "")))
 
 
 func _build_ui() -> void:

@@ -8,12 +8,18 @@ const CUSTOMERS_PATH := "res://data/customers.json"
 const COMBOS_PATH := "res://data/combos.json"
 const CUSTOMER_PROFILES_PATH := "res://data/customer_profiles.json"
 const NIGHTS_PATH := "res://data/nights.json"
+const CHAPTERS_PATH := "res://data/chapters.json"
+const STORY_EVENTS_PATH := "res://data/story_events.json"
+const ENDINGS_PATH := "res://data/endings.json"
 
 var items = {}
 var customers = {}
 var combos = {}
 var customer_profiles = {}
 var nights = {}
+var chapters = {}
+var story_events = {}
+var endings = {}
 
 var _loaded := false
 
@@ -59,6 +65,27 @@ func load_all_data() -> bool:
 		all_loaded = false
 	else:
 		nights = loaded_nights
+
+	var loaded_chapters = _load_dataset("chapters", CHAPTERS_PATH, "chapters")
+	if loaded_chapters == null:
+		chapters = {}
+		all_loaded = false
+	else:
+		chapters = loaded_chapters
+
+	var loaded_story_events = _load_dataset("story_events", STORY_EVENTS_PATH, "story_events")
+	if loaded_story_events == null:
+		story_events = {}
+		all_loaded = false
+	else:
+		story_events = loaded_story_events
+
+	var loaded_endings = _load_dataset("endings", ENDINGS_PATH, "endings")
+	if loaded_endings == null:
+		endings = {}
+		all_loaded = false
+	else:
+		endings = loaded_endings
 
 	_loaded = all_loaded
 	if all_loaded:
@@ -115,6 +142,18 @@ func get_all_nights() -> Array:
 	return get_nights()
 
 
+func get_all_chapters() -> Array:
+	return _collection_to_array(chapters)
+
+
+func get_all_story_events() -> Array:
+	return _collection_to_array(story_events)
+
+
+func get_all_endings() -> Array:
+	return _collection_to_array(endings)
+
+
 func get_item(item_id: String) -> Dictionary:
 	return _get_record(items, item_id)
 
@@ -161,6 +200,46 @@ func get_night(night_id: int) -> Dictionary:
 
 func get_night_config(night_number: int) -> Dictionary:
 	return get_night(night_number)
+
+
+func get_chapter_by_id(chapter_id: String) -> Dictionary:
+	return _get_record(chapters, chapter_id)
+
+
+func get_chapter_for_night(night_number: int) -> Dictionary:
+	if night_number < 1:
+		return {}
+
+	for chapter in get_all_chapters():
+		if not (chapter is Dictionary):
+			continue
+
+		var start_night := _to_int(chapter.get("start_night", 0), 0)
+		var end_night := _to_int(chapter.get("end_night", 0), 0)
+		if night_number >= start_night and night_number <= end_night:
+			return chapter.duplicate(true)
+
+	return {}
+
+
+func get_story_event_by_id(event_id: String) -> Dictionary:
+	return _get_record(story_events, event_id)
+
+
+func get_events_for_type(event_type: String) -> Array:
+	var matches := []
+	if event_type.is_empty():
+		return matches
+
+	for event in get_all_story_events():
+		if event is Dictionary and str(event.get("type", "")) == event_type:
+			matches.append(event.duplicate(true))
+
+	return matches
+
+
+func get_ending_by_id(ending_id: String) -> Dictionary:
+	return _get_record(endings, ending_id)
 
 
 func get_customer_request_by_story_stage(story_id: String, story_stage: int) -> Dictionary:

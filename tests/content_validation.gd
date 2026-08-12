@@ -5,6 +5,9 @@ const CUSTOMERS_PATH := "res://data/customers.json"
 const COMBOS_PATH := "res://data/combos.json"
 const CUSTOMER_PROFILES_PATH := "res://data/customer_profiles.json"
 const NIGHTS_PATH := "res://data/nights.json"
+const CHAPTERS_PATH := "res://data/chapters.json"
+const STORY_EVENTS_PATH := "res://data/story_events.json"
+const ENDINGS_PATH := "res://data/endings.json"
 
 const ALLOWED_TAGS := [
 	"清醒",
@@ -59,6 +62,9 @@ func _run() -> void:
 	var combos := _load_json_array(COMBOS_PATH)
 	var profiles := _load_json_array(CUSTOMER_PROFILES_PATH)
 	var nights := _load_json_array(NIGHTS_PATH)
+	var chapters := _load_json_array(CHAPTERS_PATH)
+	var story_events := _load_json_array(STORY_EVENTS_PATH)
+	var endings := _load_json_array(ENDINGS_PATH)
 
 	_validate_items(items)
 	_validate_customer_profiles(profiles)
@@ -67,6 +73,9 @@ func _run() -> void:
 	_validate_story_links()
 	_validate_customer_tags_are_answerable(customers, combos)
 	_validate_nights(nights, customers)
+	_validate_chapters(chapters, nights)
+	_validate_story_events(story_events, chapters, nights, customers)
+	_validate_endings(endings, chapters)
 
 	if _failures.is_empty():
 		print("Content validation passed.")
@@ -453,6 +462,133 @@ func _build_customer_story_stage_lookup(customers: Array) -> Dictionary:
 		lookup.erase(key)
 
 	return lookup
+
+
+func _validate_chapters(chapters: Array, nights: Array) -> void:
+	var seen_ids := {}
+	var known_nights := {}
+	for night in nights:
+		if night is Dictionary:
+			known_nights[_to_int(night.get("night", 0), 0)] = true
+
+	for chapter in chapters:
+		if not (chapter is Dictionary):
+			_fail(CHAPTERS_PATH, "", "chapter entry must be a Dictionary")
+			continue
+
+		var chapter_id := str(chapter.get("id", ""))
+		if chapter_id.is_empty():
+			_fail(CHAPTERS_PATH, "", "chapter id must not be empty")
+		elif seen_ids.has(chapter_id):
+			_fail(CHAPTERS_PATH, chapter_id, "duplicate chapter id")
+		seen_ids[chapter_id] = true
+
+		var start_night := _to_int(chapter.get("start_night", 0), 0)
+		var end_night := _to_int(chapter.get("end_night", 0), 0)
+		if start_night > end_night:
+			_fail(CHAPTERS_PATH, chapter_id, "start_night must be <= end_night")
+
+		var required_nights = chapter.get("required_nights", [])
+		if not (required_nights is Array):
+			_fail(CHAPTERS_PATH, chapter_id, "required_nights must be an Array")
+		else:
+			for night_number in required_nights:
+				if not known_nights.has(_to_int(night_number, 0)):
+					_fail(CHAPTERS_PATH, chapter_id, "required night does not exist: %s" % str(night_number))
+
+	if not seen_ids.has("chapter_01"):
+		_fail(CHAPTERS_PATH, "chapter_01", "required MVP chapter is missing")
+	else:
+		var chapter_one := _find_record_by_id(chapters, "chapter_01")
+		if _to_int(chapter_one.get("start_night", 0), 0) != 1 or _to_int(chapter_one.get("end_night", 0), 0) != 5:
+			_fail(CHAPTERS_PATH, "chapter_01", "chapter_01 must cover Night 1 through Night 5")
+
+
+func _validate_story_events(events: Array, chapters: Array, nights: Array, customers: Array) -> void:
+	var seen_ids := {}
+	var chapter_ids := _record_ids(chapters)
+	var night_ids := {}
+	for night in nights:
+		if night is Dictionary:
+			night_ids[_to_int(night.get("night", 0), 0)] = true
+	var story_lookup := _build_customer_story_stage_lookup(customers)
+
+	for event in events:
+		if not (event is Dictionary):
+			_fail(STORY_EVENTS_PATH, "", "event entry must be a Dictionary")
+			continue
+
+		var event_id := str(event.get("id", ""))
+		if event_id.is_empty():
+			_fail(STORY_EVENTS_PATH, "", "event id must not be empty")
+		elif seen_ids.has(event_id):
+			_fail(STORY_EVENTS_PATH, event_id, "duplicate event id")
+		seen_ids[event_id] = true
+
+		if str(event.get("type", "")).is_empty():
+			_fail(STORY_EVENTS_PATH, event_id, "type must not be empty")
+		if not (event.get("trigger", {}) is Dictionary):
+			_fail(STORY_EVENTS_PATH, event_id, "trigger must be a Dictionary")
+			continue
+		if typeof(event.get("one_time")) != TYPE_BOOL:
+			_fail(STORY_EVENTS_PATH, event_id, "one_time must be a bool")
+
+		var trigger: Dictionary = event.get("trigger", {})
+		var chapter_id := str(trigger.get("chapter_id", ""))
+		if not chapter_id.is_empty() and not chapter_ids.has(chapter_id):
+			_fail(STORY_EVENTS_PATH, event_id, "referenced chapter_id does not exist: %s" % chapter_id)
+		var night_number := _to_int(trigger.get("night", 0), 0)
+		if night_number > 0 and not night_ids.has(night_number):
+			_fail(STORY_EVENTS_PATH, event_id, "referenced night does not exist: %d" % night_number)
+		var story_id := str(trigger.get("story_id", ""))
+		if not story_id.is_empty():
+			var story_stage := _to_int(trigger.get("story_stage", 0), 0)
+			if not story_lookup.has(_story_stage_key(story_id, story_stage)):
+				_fail(STORY_EVENTS_PATH, event_id, "referenced story_id + story_stage does not exist")
+
+
+func _validate_endings(endings: Array, chapters: Array) -> void:
+	var seen_ids := {}
+	var chapter_ids := _record_ids(chapters)
+	for ending in endings:
+		if not (ending is Dictionary):
+			_fail(ENDINGS_PATH, "", "ending entry must be a Dictionary")
+			continue
+
+		var ending_id := str(ending.get("id", ""))
+		if ending_id.is_empty():
+			_fail(ENDINGS_PATH, "", "ending id must not be empty")
+		elif seen_ids.has(ending_id):
+			_fail(ENDINGS_PATH, ending_id, "duplicate ending id")
+		seen_ids[ending_id] = true
+
+		var conditions = ending.get("conditions", {})
+		if not (conditions is Dictionary):
+			_fail(ENDINGS_PATH, ending_id, "conditions must be a Dictionary")
+			continue
+		var chapter_id := str(conditions.get("completed_chapter", ""))
+		if chapter_id.is_empty() or not chapter_ids.has(chapter_id):
+			_fail(ENDINGS_PATH, ending_id, "completed_chapter must reference an existing chapter")
+
+	if not seen_ids.has("ending_mvp_placeholder"):
+		_fail(ENDINGS_PATH, "ending_mvp_placeholder", "required placeholder ending is missing")
+
+
+func _record_ids(records: Array) -> Dictionary:
+	var ids := {}
+	for record in records:
+		if record is Dictionary:
+			var record_id := str(record.get("id", ""))
+			if not record_id.is_empty():
+				ids[record_id] = true
+	return ids
+
+
+func _find_record_by_id(records: Array, record_id: String) -> Dictionary:
+	for record in records:
+		if record is Dictionary and str(record.get("id", "")) == record_id:
+			return record
+	return {}
 
 
 func _validate_night_five_final_customer(nights_by_number: Dictionary) -> void:
